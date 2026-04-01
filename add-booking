@@ -1,0 +1,27 @@
+function confirmBooking() {
+    const val = document.getElementById("tripSelect").value;
+    if (!val) return;
+    const t = trips[val];
+
+    const btn = document.getElementById("confirmBtn");
+    btn.disabled = true;
+    document.getElementById("btnText").textContent = "Booking...";
+
+    // محاكاة عملية الحجز
+    setTimeout(() => {
+      t.seats--;
+      // تحديث واجهة المستخدم
+      document.getElementById("pvSeats").textContent = `${t.seats}/${t.total} seats`;
+      
+      // تعبئة بيانات الـ Modal بنفس نمط صفحة My Bookings
+      document.getElementById("qrInfo").textContent = `${t.from} → ${t.to} | ${t.bus}`;
+      document.getElementById("successMsg").textContent = `Reservation confirmed for ${t.date} at ${t.time}`;
+      
+      // إظهار المودال
+      document.getElementById("successModal").classList.add("active");
+      
+      // إعادة زر التأكيد لحالته الطبيعية
+      document.getElementById("btnText").textContent = "Confirm Booking";
+      btn.disabled = false;
+    }, 1200);
+  }
