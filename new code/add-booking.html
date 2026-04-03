@@ -6,14 +6,7 @@
   <title>Book a Trip - SAI System</title>
   <link rel="stylesheet" href="styles.css"/>
   <style>
-    :root { --primary: #1f3566; --accent: #e2a94b; --success: #2e7d32; --danger: #d92d20; --warning: #f3a000; --bg: #f7f8fc; }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #1f2937; line-height: 1.5; }
-
-    .navbar { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-    .navbar-left { font-weight: 800; font-size: 16px; }
-    .navbar-right { font-size: 12px; color: rgba(255,255,255,0.7); }
-
+   
     .container { width: 92%; max-width: 700px; margin: 30px auto; }
 
     h2 { font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
@@ -88,10 +81,35 @@
   </style>
 </head>
 <body>
-
 <header class="navbar">
-  <div class="navbar-left">SAI SYSTEM</div>
-
+  <div class="navbar-inner">
+    <a href="user-dashboard.html" class="nav-logo">
+      <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
+    </a>
+    <nav class="nav-links">
+      <a href="user-dashboard.html" class="nav-link" >Dashboard</a>
+      <a href="view-trips.html" class="nav-link active">View Trips</a>
+      <a href="add-booking.html"  class="nav-link">Book a Trip</a>
+      <a href="my-bookings.html" class="nav-link">My Bookings</a>
+      <a href="user-heat-map.html" class="nav-link">Heat Map</a>
+    </nav>
+    <div class="nav-right">
+      <span class="role-chip user">&#9679; User</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;" id="user-name">Khalid</span>
+      <a href="signin.html" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="nav-mobile" id="nm">
+    <a href="user-dashboard.html" class="nav-link active">Dashboard</a>
+    <a href="view-trips.html"   class="nav-link">View Trips</a>
+    <a href="add-booking.html"    class="nav-link">Book a Trip</a>
+    <a href="my-bookings.html"    class="nav-link">My Bookings</a>
+    <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+    <div class="nav-mobile-footer">
+      <a href="signin.html" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+  </div>
 </header>
 
 <main class="container">
@@ -169,6 +187,11 @@
     <button class="btn-primary" onclick="hideModals()">Done</button>
   </div>
 </div>
+
+
+<footer class="site-footer">
+  <p>© 2026 SAII. All rights reserved.</p>
+</footer>
 
 <script>
   const trips = {
