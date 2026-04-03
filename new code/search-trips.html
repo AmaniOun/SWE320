@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Trips – SAII</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="page-wrapper">
+
+<!-- ── SHARED HEADER ── -->
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="user-dashboard.html" class="nav-logo">
+      <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
+    </a>
+    <nav class="nav-links">
+      <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+      <a href="search-trips.html"   class="nav-link active">Search Trips</a>
+      <a href="add-booking.html"    class="nav-link">Book a Trip</a>
+      <a href="my-bookings.html"    class="nav-link">My Bookings</a>
+      <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+    </nav>
+    <div class="nav-right">
+      <span class="role-chip user">User</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">Khalid</span>
+      <a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="nav-mobile" id="nm">
+    <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+    <a href="search-trips.html"   class="nav-link active">Search Trips</a>
+    <a href="add-booking.html"    class="nav-link">Book a Trip</a>
+    <a href="my-bookings.html"    class="nav-link">My Bookings</a>
+    <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+    <div class="nav-mobile-footer"><a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a></div>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <div class="search-page-head">
+    <h1 class="page-title">Search Trips</h1>
+    <p class="page-subtitle">Find available bus trips between holy sites</p>
+  </div>
+
+  <div class="card search-filter-card mb-6">
+    <div class="card-body">
+      <div class="search-filter-grid">
+        <div class="form-group">
+          <label class="form-label">From</label>
+          <select class="form-select" id="fromFilter">
+            <option>All Locations</option>
+            <option>Makkah Hotel</option>
+            <option>Mina</option>
+            <option>Arafat</option>
+            <option>Muzdalifah</option>
+            <option>Jamarat</option>
+            <option>Aziziyah</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">To</label>
+          <select class="form-select" id="toFilter">
+            <option>All Locations</option>
+            <option>Makkah Hotel</option>
+            <option>Mina</option>
+            <option>Arafat</option>
+            <option>Muzdalifah</option>
+            <option>Jamarat</option>
+            <option>Aziziyah</option>
+          </select>
+        </div>
+
+        <div class="search-clear-wrap">
+          <button class="btn btn-outline search-clear-btn" id="clearFiltersBtn"><b>Clear</b></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="search-results">
+
+    <div class="trip-search-card" data-from="makkah hotel" data-to="mina">
+      <div class="trip-search-bar"></div>
+      <div class="trip-search-content">
+        <div class="trip-search-top">
+          <div class="trip-search-title-wrap">
+            <div class="trip-search-title">Bus BUS-31</div>
+            <div class="trip-search-id">#TRP-006</div>
+          </div>
+          <span class="search-status-badge">active</span>
+        </div>
+
+        <div class="trip-search-route">
+          <div class="trip-search-place">Makkah Hotel</div>
+          <div class="trip-search-line"></div>
+          <div class="trip-search-place">Mina</div>
+        </div>
+
+        <div class="trip-search-meta">
+          <span>May 25, 2026</span>
+          <span>07:00 AM</span>
+          <span>30/45 seats</span>
+        </div>
+
+        <div class="trip-search-actions">
+          <a href="add-booking.html" class="btn btn-accent"><b>Book Now</b></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="trip-search-card" data-from="muzdalifah" data-to="aziziyah">
+      <div class="trip-search-bar"></div>
+      <div class="trip-search-content">
+        <div class="trip-search-top">
+          <div class="trip-search-title-wrap">
+            <div class="trip-search-title">Bus BUS-15</div>
+            <div class="trip-search-id">#TRP-003</div>
+          </div>
+          <span class="search-status-badge">active</span>
+        </div>
+
+        <div class="trip-search-route">
+          <div class="trip-search-place">Muzdalifah</div>
+          <div class="trip-search-line"></div>
+          <div class="trip-search-place">Aziziyah</div>
+        </div>
+
+        <div class="trip-search-meta">
+          <span>May 27, 2026</span>
+          <span>11:15 PM</span>
+          <span>41/50 seats</span>
+        </div>
+
+        <div class="trip-search-actions">
+          <a href="add-booking.html" class="btn btn-accent"><b>Book Now</b></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="trip-search-card" data-from="arafat" data-to="muzdalifah">
+      <div class="trip-search-bar"></div>
+      <div class="trip-search-content">
+        <div class="trip-search-top">
+          <div class="trip-search-title-wrap">
+            <div class="trip-search-title">Bus BUS-22</div>
+            <div class="trip-search-id">#TRP-004</div>
+          </div>
+          <span class="search-status-badge">active</span>
+        </div>
+
+        <div class="trip-search-route">
+          <div class="trip-search-place">Arafat</div>
+          <div class="trip-search-line"></div>
+          <div class="trip-search-place">Muzdalifah</div>
+        </div>
+
+        <div class="trip-search-meta">
+          <span>May 26, 2026</span>
+          <span>06:30 PM</span>
+          <span>19/45 seats</span>
+        </div>
+
+        <div class="trip-search-actions">
+          <a href="add-booking.html" class="btn btn-accent"><b>Book Now</b></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="trip-search-card" data-from="jamarat" data-to="makkah hotel">
+      <div class="trip-search-bar"></div>
+      <div class="trip-search-content">
+        <div class="trip-search-top">
+          <div class="trip-search-title-wrap">
+            <div class="trip-search-title">Bus BUS-18</div>
+            <div class="trip-search-id">#TRP-005</div>
+          </div>
+          <span class="search-status-badge">active</span>
+        </div>
+
+        <div class="trip-search-route">
+          <div class="trip-search-place">Jamarat</div>
+          <div class="trip-search-line"></div>
+          <div class="trip-search-place">Makkah Hotel</div>
+        </div>
+
+        <div class="trip-search-meta">
+          <span>May 28, 2026</span>
+          <span>01:00 PM</span>
+          <span>48/50 seats</span>
+        </div>
+
+        <div class="trip-search-actions">
+          <a href="add-booking.html" class="btn btn-accent"><b>Book Now</b></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="trip-search-card" data-from="aziziyah" data-to="arafat">
+      <div class="trip-search-bar"></div>
+      <div class="trip-search-content">
+        <div class="trip-search-top">
+          <div class="trip-search-title-wrap">
+            <div class="trip-search-title">Bus BUS-09</div>
+            <div class="trip-search-id">#TRP-007</div>
+          </div>
+          <span class="search-status-badge">active</span>
+        </div>
+
+        <div class="trip-search-route">
+          <div class="trip-search-place">Aziziyah</div>
+          <div class="trip-search-line"></div>
+          <div class="trip-search-place">Arafat</div>
+        </div>
+
+        <div class="trip-search-meta">
+          <span>May 26, 2026</span>
+          <span>05:30 AM</span>
+          <span>5/45 seats</span>
+        </div>
+
+        <div class="trip-search-actions">
+          <a href="add-booking.html" class="btn btn-accent"><b>Book Now</b></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="trip-search-card" data-from="mina" data-to="jamarat">
+      <div class="trip-search-bar"></div>
+      <div class="trip-search-content">
+        <div class="trip-search-top">
+          <div class="trip-search-title-wrap">
+            <div class="trip-search-title">Bus BUS-27</div>
+            <div class="trip-search-id">#TRP-008</div>
+          </div>
+          <span class="search-status-badge">active</span>
+        </div>
+
+        <div class="trip-search-route">
+          <div class="trip-search-place">Mina</div>
+          <div class="trip-search-line"></div>
+          <div class="trip-search-place">Jamarat</div>
+        </div>
+
+        <div class="trip-search-meta">
+          <span>May 28, 2026</span>
+          <span>08:00 AM</span>
+          <span>10/45 seats</span>
+        </div>
+
+        <div class="trip-search-actions">
+          <a href="add-booking.html" class="btn btn-accent"><b>Book Now</b></a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SHARED FOOTER ── -->
+<footer class="site-footer">
+  <p>© 2026 SAII. All rights reserved.</p>
+</footer>
+
+<script>
+  const fromFilter = document.getElementById('fromFilter');
+  const toFilter = document.getElementById('toFilter');
+  const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+  const tripCards = document.querySelectorAll('.trip-search-card');
+
+  function normalizeText(value) {
+    return value.trim().toLowerCase();
+  }
+
+  function filterTrips() {
+    const fromValue = normalizeText(fromFilter.value);
+    const toValue = normalizeText(toFilter.value);
+
+    tripCards.forEach(card => {
+      const cardFrom = normalizeText(card.getAttribute('data-from') || '');
+      const cardTo = normalizeText(card.getAttribute('data-to') || '');
+
+      const matchFrom =
+        fromValue === 'all locations' || fromValue === '' || cardFrom === fromValue;
+
+      const matchTo =
+        toValue === 'all locations' || toValue === '' || cardTo === toValue;
+
+      card.style.display = (matchFrom && matchTo) ? 'flex' : 'none';
+    });
+  }
+
+  function clearFilters() {
+    fromFilter.value = 'All Locations';
+    toFilter.value = 'All Locations';
+    filterTrips();
+  }
+
+  fromFilter.addEventListener('change', filterTrips);
+  toFilter.addEventListener('change', filterTrips);
+  clearFiltersBtn.addEventListener('click', clearFilters);
+
+  filterTrips();
+</script>
+</body>
+</html>
