@@ -147,7 +147,6 @@
     var email   = document.getElementById('su-email').value.trim();
     var pass    = document.getElementById('su-pass').value;
     var confirm = document.getElementById('su-confirm').value;
-    var terms   = document.getElementById('su-terms').checked;
     var valid   = true;
 
     if(!fname) { showFErr('su-fname','err-fname','First name is required'); valid=false; }
@@ -161,7 +160,8 @@
     }
     if(!pass||pass.length<8) { showFErr('su-pass','err-su-pass','Password must be at least 8 characters'); valid=false; }
     if(pass!==confirm)        { showFErr('su-confirm','err-su-confirm','Passwords do not match'); valid=false; }
-   
+    
+    if(!valid) return;
 
     showToast('Account created! Welcome, '+fname+'!','success');
     setTimeout(function(){ window.location.href='user-dashboard.html'; }, 800);
