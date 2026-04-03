@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Sign In — SAII Hajj Transport</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- ── Shared Header ── -->
+<header style="position:sticky;top:0;z-index:200;background:#F0ECE6;border-bottom:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.1)">
+  <div style="max-width:1152px;margin:0 auto;padding:0 1.5rem;height:64px;display:flex;align-items:center;">
+      <a href="index.html" class="nav-logo">
+        <img src="image/logo.png" alt="SAII Logo" class="saii-img"/>
+      </a>
+    
+    </div>
+  </header>
+
+  <!-- ── Card ── -->
+  <div class="auth-body">
+    <div class="auth-card">
+
+      <div class="auth-logo-wrap">
+        <img src="image/logo.png" alt="SAII Logo"/>
+      </div>
+
+      <h1>Welcome Back</h1>
+      <p class="auth-subtitle">Sign in to your SAII account</p>
+
+      <div class="form-group">
+        <label class="form-label" for="login-email">Email Address</label>
+        <div class="input-wrapper">
+          <span class="input-icon-left">✉</span>
+          <input class="form-input input-with-icon" type="email" id="login-email"
+                 placeholder="admin@saii.com" autocomplete="email" value="admin@saii.com"/>
+        </div>
+        <span class="field-error" id="err-email">Please enter your email</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon-left">🔒</span>
+          <input class="form-input input-with-icon" type="password" id="login-password"
+                 placeholder="••••••••" autocomplete="current-password" value="password"/>
+        </div>
+        <span class="field-error" id="err-password">Incorrect email or password</span>
+      </div>
+
+      <button class="btn btn-primary btn-full btn-auth" onclick="doLogin()">Sign In</button>
+
+      <div class="auth-footer">
+        <a href="#" onclick="showToast('Password reset link sent to your email','info');return false;">Forgot password?</a>
+        <a href="signup.html" class="link-accent">Need an account? Sign up</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Shared Footer ── -->
+  <footer class="site-footer">
+    <p>© 2026 SAII. All rights reserved.</p>
+  </footer>
+
+</div><!-- /auth-page -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var USERS = [
+    { email:'admin@saii.com', password:'password', firstName:'Admin',  lastName:'User',  role:'admin' },
+    { email:'meow@saii.com',  password:'12345678', firstName:'Meow',   lastName:'Admin', role:'admin' },
+    { email:'user@saii.com',  password:'user1234', firstName:'Khalid', lastName:'Ali',   role:'user'  }
+  ];
+
+  function doLogin() {
+    var email = document.getElementById('login-email').value.trim();
+    var pass  = document.getElementById('login-password').value;
+    clearErrors();
+    if (!email) { showFE('login-email','err-email','Email is required'); return; }
+    if (!pass)  { showFE('login-password','err-password','Password is required'); return; }
+
+    var user = null;
+    for (var i=0;i<USERS.length;i++) {
+      if (USERS[i].email===email && USERS[i].password===pass) { user=USERS[i]; break; }
+    }
+    if (!user) {
+      showFE('login-email','err-email','');
+      showFE('login-password','err-password','Incorrect email or password');
+      showToast('Incorrect email or password','error');
+      return;
+    }
+    showToast('Welcome back, '+user.firstName+'!','success');
+    setTimeout(function(){
+      window.location.href = (user.role==='admin') ? 'admin-dashboard.html' : 'user-dashboard.html';
+    }, 700);
+  }
+
+  function clearErrors() {
+    ['login-email','login-password'].forEach(function(id){ document.getElementById(id).classList.remove('error'); });
+    ['err-email','err-password'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+  }
+  function showFE(inputId,errId,msg) {
+    document.getElementById(inputId).classList.add('error');
+    var el=document.getElementById(errId);
+    if(msg) el.textContent=msg;
+    el.classList.add('show');
+  }
+  var _tt;
+  function showToast(msg,type) {
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.className='toast '+(type||'info')+' show';
+    clearTimeout(_tt); _tt=setTimeout(function(){ t.classList.remove('show'); },3200);
+  }
+  document.addEventListener('keydown',function(e){ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>

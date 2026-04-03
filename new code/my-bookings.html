@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>My Bookings — SAII Hajj Transport</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+</head>
+<body class="page-wrapper">
+
+<!-- ── SHARED HEADER ── -->
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="user-dashboard.html" class="nav-logo">
+      <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
+    </a>
+    <nav class="nav-links">
+      <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+      <a href="search-trips.html"   class="nav-link">Search Trips</a>
+      <a href="add-booking.html"    class="nav-link">Book a Trip</a>
+      <a href="my-bookings.html"    class="nav-link active">My Bookings</a>
+      <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+    </nav>
+    <div class="nav-right">
+      <span class="role-chip user">User</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">Khalid</span>
+      <a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="nav-mobile" id="nm">
+    <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+    <a href="search-trips.html"   class="nav-link">Search Trips</a>
+    <a href="add-booking.html"    class="nav-link">Book a Trip</a>
+    <a href="my-bookings.html"    class="nav-link active">My Bookings</a>
+    <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+    <div class="nav-mobile-footer"><a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a></div>
+  </div>
+</header>
+
+<!-- ── CONTENT ── -->
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">My Bookings</h1>
+      <p class="page-subtitle">View and manage your trip reservations</p>
+    </div>
+    <a href="add-booking.html" class="btn btn-accent">+ Book a Trip</a>
+  </div>
+
+  <div class="bookings-list" id="bookings-list"></div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal" style="text-align:center;max-width:360px;">
+    <div class="modal-header" style="justify-content:center;border-bottom:none;padding-bottom:0;">
+      <h3 id="qr-title">Boarding Pass</h3>
+    </div>
+    <div style="margin:1.25rem 0;border:2px dashed var(--border);padding:1.5rem;border-radius:var(--radius);position:relative;display:inline-block;">
+      <i class="fa-solid fa-qrcode" style="font-size:90px;color:var(--fg);"></i>
+      <div id="qr-expired" style="display:none;position:absolute;top:38%;left:0;width:100%;background:rgba(220,38,38,.9);color:#fff;padding:6px;font-weight:900;transform:rotate(-10deg);font-size:.85rem;text-align:center;">EXPIRED</div>
+    </div>
+    <p id="qr-info" style="font-weight:600;font-size:.875rem;color:var(--fg);margin-bottom:1rem;"></p>
+    <button class="btn btn-primary btn-full" onclick="closeModal('qr-modal')">Close</button>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3>Modify Booking</h3>
+      <button class="btn-modal-close" onclick="closeModal('edit-modal')">&#10005;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      <div class="form-group">
+        <label class="form-label">New Trip Date</label>
+        <input class="form-input" type="date" id="new-date-input" min="2026-03-25"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Route</label>
+        <div class="select-wrap">
+          <select class="form-select" id="new-route-input">
+            <option value="Mina → Arafat">Mina → Arafat  08:00</option>
+            <option value="Arafat → Muzdalifah">Arafat → Muzdalifah  14:30</option>
+            <option value="Muzdalifah → Mina">Muzdalifah → Mina  22:00</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-accent btn-full" style="margin-top:1rem;" onclick="processEdit()">Update Booking</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:.5rem;" onclick="closeModal('edit-modal')">Cancel</button>
+  </div>
+</div>
+
+<!-- CANCEL CONFIRM MODAL -->
+<div class="modal-overlay" id="cancel-modal">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon-wrap" style="background:hsla(0,72%,51%,.1);">
+      <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem;color:var(--destructive);"></i>
+    </div>
+    <h3>Cancel Booking?</h3>
+    <p>This will release your seat. Are you sure you want to cancel?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-outline btn-full" onclick="closeModal('cancel-modal')">No, Keep It</button>
+      <button class="btn btn-destructive btn-full" onclick="executeCancel()">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS MODAL -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon-wrap" id="status-icon-wrap">
+      <i id="status-icon" class="fa-solid" style="font-size:1.5rem;"></i>
+    </div>
+    <h3 id="status-title"></h3>
+    <p id="status-body"></p>
+    <button class="btn btn-primary btn-full" onclick="closeModal('status-modal')">Understood</button>
+  </div>
+</div>
+
+<!-- ── SHARED FOOTER ── -->
+<footer class="site-footer">
+  <p>© 2026 SAII. All rights reserved.</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var NOW = new Date("2026-03-25T00:00:00");
+
+  var bookings = [
+    { id:101, route:"Arafat → Muzdalifah", date:"2026-08-10", time:"14:30", bus:"Bus-07", tripID:"TRP-42", status:"confirmed" },
+    { id:102, route:"Mina → Arafat",       date:"2026-03-20", time:"08:00", bus:"Bus-03", tripID:"TRP-03", status:"confirmed" },
+    { id:103, route:"Arafat → Muzdalifah", date:"2026-04-10", time:"14:30", bus:"Bus-07", tripID:"TRP-42", status:"cancelled" },
+    { id:104, route:"Muzdalifah → Mina",   date:"2026-03-24", time:"22:00", bus:"Bus-10", tripID:"TRP-10", status:"confirmed" }
+  ];
+
+  var activeId = null;
+
+  function drawList() {
+    var el = document.getElementById('bookings-list');
+    el.innerHTML = '';
+
+    bookings.forEach(function(b) {
+      var tripTime  = new Date(b.date+'T'+b.time);
+      var hoursDiff = (tripTime - NOW) / (1000*60*60);
+      var borderColor, badgeClass, canModify=false, qrState='valid';
+
+      if (b.status==='cancelled') {
+        borderColor='var(--destructive)'; badgeClass='badge-cancelled'; qrState='none';
+      } else if (hoursDiff<0) {
+        borderColor='hsl(37,60%,55%)'; badgeClass='badge-pending'; qrState='expired';
+      } else if (hoursDiff<3) {
+        borderColor='hsl(37,60%,55%)'; badgeClass='badge-confirmed';
+      } else {
+        borderColor='#22c55e'; badgeClass='badge-confirmed'; canModify=true;
+      }
+
+      el.innerHTML +=
+        '<div class="booking-card" style="border-left-color:'+borderColor+'">'+
+          '<div style="flex:1;">'+
+            '<span class="status-badge '+badgeClass+'">'+b.status+'</span>'+
+            '<div class="booking-route">'+b.route+'</div>'+
+            '<div class="booking-meta">'+
+              '<span><i class="fa-regular fa-calendar" style="color:var(--accent)"></i> '+b.date+'</span>'+
+              '<span><i class="fa-regular fa-clock" style="color:var(--accent)"></i> '+b.time+'</span>'+
+              '<span><i class="fa-solid fa-bus" style="color:var(--accent)"></i> '+b.bus+' ('+b.tripID+')</span>'+
+            '</div>'+
+          '</div>'+
+          '<div class="booking-actions">'+
+            '<button class="icon-btn" title="QR Code" onclick="openQR('+b.id+',\''+qrState+'\')"><i class="fa-solid fa-qrcode"></i></button>'+
+            '<button class="icon-btn" title="'+(canModify?'Modify booking':'Locked')+'" onclick="openEdit('+b.id+','+canModify+')" '+(canModify?'':'style="opacity:.4;cursor:not-allowed"')+' '+(canModify?'':'disabled')+'>'+
+              '<i class="fa-solid fa-pen"></i>'+
+            '</button>'+
+            '<button class="icon-btn" title="Cancel" onclick="openCancel('+b.id+','+canModify+')" '+(canModify?'':'style="opacity:.4;cursor:not-allowed"')+' '+(canModify?'':'disabled')+'>'+
+              '<i class="fa-solid fa-xmark"></i>'+
+            '</button>'+
+          '</div>'+
+        '</div>';
+    });
+  }
+
+  function openQR(id, state) {
+    if (state==='none') { showStatus('Not Available','QR code is not available for cancelled trips.','var(--destructive)','fa-circle-xmark'); return; }
+    var b=bookings.find(function(x){return x.id===id;});
+    document.getElementById('qr-info').textContent = b.route+' | '+b.bus;
+    document.getElementById('qr-expired').style.display = (state==='expired')?'block':'none';
+    document.getElementById('qr-modal').classList.add('open');
+  }
+
+  function openEdit(id, allowed) {
+    if (!allowed) { showStatus('Locked','This booking cannot be modified at this time.','hsl(37,60%,55%)','fa-lock'); return; }
+    activeId=id;
+    var b=bookings.find(function(x){return x.id===id;});
+    document.getElementById('new-date-input').value  = b.date;
+    document.getElementById('new-route-input').value = b.route;
+    document.getElementById('edit-modal').classList.add('open');
+  }
+
+  function processEdit() {
+    var b=bookings.find(function(x){return x.id===activeId;});
+    if (!b) return;
+    b.date  = document.getElementById('new-date-input').value;
+    b.route = document.getElementById('new-route-input').value;
+    if (b.route.indexOf('Mina → Arafat')!==-1)        b.time='08:00';
+    else if (b.route.indexOf('Arafat → Muzdalifah')!==-1) b.time='14:30';
+    else if (b.route.indexOf('Muzdalifah → Mina')!==-1)   b.time='22:00';
+    closeModal('edit-modal');
+    drawList();
+    showStatus('Updated!','Trip updated to: '+b.route+' at '+b.time,'#22c55e','fa-circle-check');
+  }
+
+  function openCancel(id, allowed) {
+    if (!allowed) { showStatus('Locked','Past or cancelled bookings cannot be modified.','hsl(37,60%,55%)','fa-lock'); return; }
+    activeId=id;
+    document.getElementById('cancel-modal').classList.add('open');
+  }
+
+  function executeCancel() {
+    var b=bookings.find(function(x){return x.id===activeId;});
+    if (b) b.status='cancelled';
+    closeModal('cancel-modal');
+    drawList();
+    showStatus('Cancelled','Your reservation has been cancelled successfully.','var(--destructive)','fa-trash-can');
+  }
+
+  function showStatus(title, body, color, icon) {
+    document.getElementById('status-title').textContent=title;
+    document.getElementById('status-body').textContent=body;
+    var si=document.getElementById('status-icon');
+    si.className='fa-solid '+icon; si.style.color=color;
+    document.getElementById('status-icon-wrap').style.background='hsla(0,0%,50%,.08)';
+    document.getElementById('status-modal').classList.add('open');
+  }
+
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  document.querySelectorAll('.modal-overlay').forEach(function(o){
+    o.addEventListener('click',function(e){ if(e.target===o) closeModal(o.id); });
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(function(m){ closeModal(m.id); });
+  });
+
+  var _tt;
+  function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'info')+' show';clearTimeout(_tt);_tt=setTimeout(function(){t.classList.remove('show');},3200);}
+
+  drawList();
+</script>
+</body>
+</html>
