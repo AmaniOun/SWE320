@@ -617,7 +617,7 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 
 .search-filter-grid{
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 120px;
   gap: 1rem;
   align-items: end;
 }
@@ -753,4 +753,37 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   .trip-search-line{
     width: 100%;
   }
+}
+
+.trip-extra-details{
+  display: grid;
+  gap: .65rem 1.25rem;
+  margin-bottom: 1rem;
+  font-size: .88rem;
+  color: var(--muted-fg);
+  align-items: start;
+}
+
+.trip-extra-details span{
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.trip-extra-details strong{
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.no-trips-message{
+  display:none;
+  text-align: center;
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:1rem;
+  padding:1rem 1.25rem;
+  margin-bottom:1rem;
+  color:var(--muted-fg);
+  font-size:.95rem;
+  box-shadow:var(--shadow);
 }
