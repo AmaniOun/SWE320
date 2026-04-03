@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>User Dashboard – SAII</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body class="page-wrapper">
+<!-- ── SHARED HEADER ── -->
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="user-dashboard.html" class="nav-logo">
+      <img src="image/saii.png" alt="SAII Logo" class="saii-img saii-img-left"/>
+    </a>
+    <nav class="nav-links">
+      <a href="user-dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="search-trips.html"   class="nav-link">Search Trips</a>
+      <a href="add-booking.html"    class="nav-link">Book a Trip</a>
+      <a href="my-bookings.html"    class="nav-link">My Bookings</a>
+      <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+    </nav>
+    <div class="nav-right">
+      <span class="role-chip user">User</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">Khalid</span>
+      <a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="nav-mobile" id="nm">
+    <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+    <a href="search-trips.html"   class="nav-link">Search Trips</a>
+    <a href="add-booking.html"    class="nav-link">Book a Trip</a>
+    <a href="my-bookings.html"    class="nav-link">My Bookings</a>
+    <a href="user-heat-map.html"       class="nav-link active">Heat Map</a>
+    <div class="nav-mobile-footer"><a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a></div>
+  </div>
+</header>
+
+
+<footer class="site-footer">
+  <p>© 2026 SAII. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
