@@ -1238,7 +1238,7 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   bottom: 0;
   width: 100vw;  /* لضمان عرض الشاشة كاملاً */
   height: 100vh; /* لضمان طول الشاشة كاملاً */
-  background: rgba(15, 23, 42, 0.6); /* تغميق الخلفية قليلاً لبروز الرسالة */
+  background: rgba(0, 0, 0, 0.5); /* تغميق الخلفية قليلاً لبروز الرسالة */
   display: flex;
   justify-content: center;
   align-items: center;
