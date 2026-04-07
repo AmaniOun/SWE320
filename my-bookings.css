@@ -252,3 +252,16 @@ body {
 .modal.hidden {
   display: none;
 }
+
+
+.site-footer {
+  border-top:1px solid var(--border);
+  padding:1.25rem 1rem;
+  text-align:center;
+  background:var(--bg);
+  margin-top:auto;
+}
+.site-footer p { color:var(--muted-fg); font-size:.8rem; }
+
+
+
