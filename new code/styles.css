@@ -1231,13 +1231,16 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 
 /* Modal */
 .modal {
-  position: fixed;
-  inset: 0;
-  background: transparent;
+  position: fixed; /* ضروري جداً ليفصل العنصر عن مكانه في الـ HTML */
+  top: 0;
+  left: 0;
+  width: 100vw; /* عرض الشاشة كاملاً */
+  height: 100vh; /* طول الشاشة كاملاً */
+  background: rgba(0, 0, 0, 0); /* لون أسود صافي بشفافية 50% لبروز الرسالة */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 9999;
 }
 
 .modal-content {
