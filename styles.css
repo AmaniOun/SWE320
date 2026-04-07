@@ -880,3 +880,101 @@ h3{font-size:1rem;font-weight:600;color:var(--fg)}
 .modal.hidden {
   display: none;
 }
+
+
+
+
+
+
+
+
+
+/* ══════════════════════════════════════
+Add Booking page
+══════════════════════════════════════ */
+
+
+ :root { --primary: #1f3566; --accent: #e2a94b; --success: #2e7d32; --danger: #d92d20; --warning: #f3a000; --bg: #f7f8fc; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #1f2937; line-height: 1.5; }
+
+   ainer { width: 92%; max-width: 700px; margin: 30px auto; }
+
+    h2 { font-size: 22px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #667085; margin-bottom: 24px; }
+
+    /* Form Card */
+    .form-card {
+      background: #fff; border: 1px solid #eceef3; border-radius: 12px;
+      padding: 24px; margin-bottom: 16px;
+    }
+    .form-card-title {
+      font-size: 14px; font-weight: 700; color: #1f3566;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 20px;
+    }
+    .form-card-title i { color: var(--accent); }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #344054; margin-bottom: 6px; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 12px; border: 1px solid #d0d5dd;
+      border-radius: 8px; font-size: 14px; color: #1f2937;
+      background: #fff; outline: none; transition: 0.2s;
+      font-family: inherit; appearance: none;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(226,169,75,0.15);
+    }
+    .form-group input[readonly] { background: #f9fafb; color: #667085; cursor: not-allowed; }
+
+    /* Trip Preview Card */
+    .trip-preview-card {
+      background: #fff; border: 1px solid #eceef3; border-radius: 12px;
+      padding: 20px; margin-bottom: 16px; border-left: 5px solid var(--accent);
+      display: none;
+    }
+    .trip-preview-card.visible { display: block; }
+
+    .trip-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .trip-bus-name { font-size: 15px; font-weight: 700; color: #1f3566; display: flex; align-items: center; gap: 6px; }
+    .trip-id-tag { font-size: 12px; color: #667085; font-weight: 400; }
+    .badge-active { background: #e8f5e9; color: var(--success); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+    .trip-route-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .trip-loc { display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; color: #1f3566; }
+    .trip-loc i { color: var(--accent); font-size: 13px; }
+    .route-arrow { color: #667085; font-size: 16px; flex: 1; text-align: center; }
+
+    .trip-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+    .trip-meta span { font-size: 12px; color: #667085; display: flex; align-items: center; gap: 5px; }
+    .trip-meta i { color: var(--accent); }
+    .seats-tag { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }
+    .seats-tag.good { background: #e8f5e9; color: var(--success); }
+    .seats-tag.low  { background: #fff3e0; color: var(--warning); }
+    .seats-tag.crit { background: #ffebee; color: var(--danger); }
+
+    /* Confirm Button */
+    .btn-confirm {
+      width: 100%; padding: 13px; background: var(--accent); color: #1f2937;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 8px; transition: 0.2s; font-family: inherit;
+    }
+    .btn-confirm:hover:not(:disabled) { background: #f4b860; }
+    .btn-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* Modals  */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-box { background: #fff; padding: 25px; border-radius: 16px; width: 380px; text-align: center; }
+    .btn-primary { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 15px; font-family: inherit; }
+    .btn-ghost   { background: #f2f4f7; color: #344054; padding: 12px; border: none; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-family: inherit; }
+  
+
+
+
+
+
+
+
+
