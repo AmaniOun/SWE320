@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <title>Book a Trip - SAI System</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body class="page-wrapper">
+
+  <!-- ── SHARED HEADER ── -->
+  <header class="navbar">
+    <div class="navbar-inner">
+      <a href="user-dashboard.html" class="nav-logo">
+        <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
+      </a>
+      <nav class="nav-links">
+        <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+        <a href="view-trips.html" class="nav-link">View Trips</a>
+        <a href="add-booking.html" class="nav-link active">Book a Trip</a>
+        <a href="my-bookings.html" class="nav-link">My Bookings</a>
+        <a href="user-heat-map.html" class="nav-link">Heat Map</a>
+      </nav>
+      <div class="nav-right">
+        <span class="role-chip user">&#9679; User</span>
+        <span style="color:rgba(255,255,255,.65);font-size:.85rem;">Khalid</span>
+        <a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a>
+      </div>
+      <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+    </div>
+
+    <div class="nav-mobile" id="nm">
+      <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+      <a href="view-trips.html" class="nav-link">View Trips</a>
+      <a href="add-booking.html" class="nav-link active">Book a Trip</a>
+      <a href="my-bookings.html" class="nav-link">My Bookings</a>
+      <a href="user-heat-map.html" class="nav-link">Heat Map</a>
+      <div class="nav-mobile-footer">
+        <a href="index.html" class="btn btn-sm btn-outline-dark">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <div class="search-page-head">
+      <h1 class="page-title">Add Booking</h1>
+      <p class="page-subtitle">Reserve a seat on an available trip</p>
+    </div>
+
+    <div id="bookingAlert" class="no-trips-message" style="display:none;"></div>
+
+    <!-- Booking form -->
+    <div class="card" style="padding:1.5rem; margin-bottom:1rem;">
+      <div class="form-card-title" style="margin-bottom:1.25rem;">
+        <i class="fa-regular fa-calendar-plus" style="color:var(--accent);"></i>
+        Booking Details
+      </div>
+
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label class="form-label" for="fullName">Full Name</label>
+        <input class="form-input" type="text" id="fullName" placeholder="Enter your full name">
+      </div>
+
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label class="form-label" for="email">Email</label>
+        <input class="form-input" type="email" id="email" placeholder="Enter your email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="tripSelect">Select Trip</label>
+        <select class="form-select" id="tripSelect">
+          <option value="">Choose a trip...</option>
+          <option value="trp31">Makkah Hotel → Mina | 2026-05-25 07:00 AM</option>
+          <option value="trp15">Muzdalifah → Aziziyah | 2026-05-27 11:15 PM</option>
+          <option value="trp07">Arafat → Muzdalifah | 2026-08-10 02:30 PM</option>
+          <option value="trp18">Jamarat → Makkah Hotel | 2026-05-28 01:00 PM</option>
+          <option value="trp09">Aziziyah → Arafat | 2026-05-26 05:30 AM</option>
+          <option value="trp27">Mina → Jamarat | 2026-05-28 08:00 AM</option>
+          <option value="trp03">Mina → Arafat | 2026-03-20 08:00 AM</option>
+          <option value="trp10">Muzdalifah → Mina | 2026-03-24 10:00 PM</option>
+        </select>
+      </div>
+    </div>
+
+
+    <!-- Available trips -->
+    <div class="search-results" id="availableTrips">
+
+      <div class="trip-search-card selectable-trip" data-trip="trp31">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-31</div>
+              <div class="trip-search-id">#TRP-006</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Makkah Hotel</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Mina</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>May 25, 2026</span>
+            <span>07:00 AM</span>
+            <span>30/45 seats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trip-search-card selectable-trip" data-trip="trp15">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-15</div>
+              <div class="trip-search-id">#TRP-003</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Muzdalifah</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Aziziyah</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>May 27, 2026</span>
+            <span>11:15 PM</span>
+            <span>41/50 seats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trip-search-card selectable-trip" data-trip="trp07">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-07</div>
+              <div class="trip-search-id">#TRP-42</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Arafat</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Muzdalifah</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>Aug 10, 2026</span>
+            <span>02:30 PM</span>
+            <span>19/45 seats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trip-search-card selectable-trip" data-trip="trp18">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-18</div>
+              <div class="trip-search-id">#TRP-005</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Jamarat</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Makkah Hotel</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>May 28, 2026</span>
+            <span>01:00 PM</span>
+            <span>48/50 seats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trip-search-card selectable-trip" data-trip="trp09">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-09</div>
+              <div class="trip-search-id">#TRP-007</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Aziziyah</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Arafat</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>May 26, 2026</span>
+            <span>05:30 AM</span>
+            <span>5/45 seats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trip-search-card selectable-trip" data-trip="trp27">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-27</div>
+              <div class="trip-search-id">#TRP-008</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Mina</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Jamarat</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>May 28, 2026</span>
+            <span>08:00 AM</span>
+            <span>10/45 seats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trip-search-card selectable-trip" data-trip="trp03">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-03</div>
+              <div class="trip-search-id">#TRP-03</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Mina</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Arafat</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>Mar 20, 2026</span>
+            <span>08:00 AM</span>
+            <span>12/45 seats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trip-search-card selectable-trip" data-trip="trp10">
+        <div class="trip-search-bar"></div>
+        <div class="trip-search-content">
+          <div class="trip-search-top">
+            <div class="trip-search-title-wrap">
+              <div class="trip-search-title">Bus BUS-10</div>
+              <div class="trip-search-id">#TRP-10</div>
+            </div>
+            <span class="search-status-badge">active</span>
+          </div>
+          <div class="trip-search-route">
+            <div class="trip-search-place">Muzdalifah</div>
+            <div class="trip-search-line"></div>
+            <div class="trip-search-place">Mina</div>
+          </div>
+          <div class="trip-search-meta">
+            <span>Mar 24, 2026</span>
+            <span>10:00 PM</span>
+            <span>18/45 seats</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <button id="confirmBookingBtn" class="btn btn-accent btn-full" style="margin-top:1rem; padding:1rem 1.25rem; font-size:1rem; font-weight:800;">
+      <i class="fa-solid fa-circle-check"></i>
+      Confirm Booking
+    </button>
+
+  </div>
+
+ <!-- Confirmation modal -->
+<div id="successModal" class="modal">
+  <div class="modal-box qr-pass-box" style="border-top: 5px solid var(--primary);">
+    <h3 id="qrTitle">Boarding Pass</h3>
+
+    <div class="qr-frame">
+      <div id="qrCodeBox">
+  <i class="fa-solid fa-qrcode" style="font-size: 100px; color:#1f3566;"></i>
+</div>
+    </div>
+
+    <p id="successMsg" class="qr-success-text"></p>
+    <p id="qrInfo" class="qr-info-text"></p>
+
+    <button class="btn-primary" onclick="hideModals()">Close</button>
+  </div>
+</div>
+
+  <footer style="border-top:1px solid var(--border);padding:1.25rem 1rem;text-align:center;background:var(--bg);">
+    <p class="text-muted text-sm">© 2026 SAII. All rights reserved.</p>
+  </footer>
+
+<script>
+  const trips = {
+    trp31: {
+      id: "TRP-006",
+      bus: "BUS-31",
+      from: "Makkah Hotel",
+      to: "Mina",
+      date: "May 25, 2026",
+      time: "07:00 AM",
+      seats: "30/45 seats",
+      pickup: "Gate A",
+      duration: "35 mins",
+      busType: "Standard",
+      note: "Comfortable availability"
+    },
+    trp15: {
+      id: "TRP-003",
+      bus: "BUS-15",
+      from: "Muzdalifah",
+      to: "Aziziyah",
+      date: "May 27, 2026",
+      time: "11:15 PM",
+      seats: "41/50 seats",
+      pickup: "Camp Exit 2",
+      duration: "25 mins",
+      busType: "Express",
+      note: "Smooth night transfer"
+    },
+    trp07: {
+      id: "TRP-42",
+      bus: "BUS-07",
+      from: "Arafat",
+      to: "Muzdalifah",
+      date: "Aug 10, 2026",
+      time: "02:30 PM",
+      seats: "19/45 seats",
+      pickup: "Arafat Gate 4",
+      duration: "40 mins",
+      busType: "Standard",
+      note: "Peak-hour departure"
+    },
+    trp18: {
+      id: "TRP-005",
+      bus: "BUS-18",
+      from: "Jamarat",
+      to: "Makkah Hotel",
+      date: "May 28, 2026",
+      time: "01:00 PM",
+      seats: "48/50 seats",
+      pickup: "Jamarat North Stop",
+      duration: "30 mins",
+      busType: "Express",
+      note: "Almost full"
+    },
+    trp09: {
+      id: "TRP-007",
+      bus: "BUS-09",
+      from: "Aziziyah",
+      to: "Arafat",
+      date: "May 26, 2026",
+      time: "05:30 AM",
+      seats: "5/45 seats",
+      pickup: "Aziziyah Camp B",
+      duration: "45 mins",
+      busType: "Standard",
+      note: "Limited seats"
+    },
+    trp27: {
+      id: "TRP-008",
+      bus: "BUS-27",
+      from: "Mina",
+      to: "Jamarat",
+      date: "May 28, 2026",
+      time: "08:00 AM",
+      seats: "10/45 seats",
+      pickup: "Mina South Gate",
+      duration: "20 mins",
+      busType: "Shuttle",
+      note: "High demand trip"
+    },
+    trp03: {
+      id: "TRP-03",
+      bus: "BUS-03",
+      from: "Mina",
+      to: "Arafat",
+      date: "Mar 20, 2026",
+      time: "08:00 AM",
+      seats: "12/45 seats",
+      pickup: "Mina Gate C",
+      duration: "35 mins",
+      busType: "Standard",
+      note: "Morning departure"
+    },
+    trp10: {
+      id: "TRP-10",
+      bus: "BUS-10",
+      from: "Muzdalifah",
+      to: "Mina",
+      date: "Mar 24, 2026",
+      time: "10:00 PM",
+      seats: "18/45 seats",
+      pickup: "Muzdalifah Route B",
+      duration: "30 mins",
+      busType: "Shuttle",
+      note: "Evening transfer"
+    }
+  };
+
+  const tripSelect = document.getElementById("tripSelect");
+  const selectableTrips = document.querySelectorAll(".selectable-trip");
+  const confirmBookingBtn = document.getElementById("confirmBookingBtn");
+  const bookingAlert = document.getElementById("bookingAlert");
+  const successModal = document.getElementById("successModal");
+
+  let selectedTripKey = "";
+
+  function showAlert(message, type = "error") {
+    bookingAlert.style.display = "block";
+    bookingAlert.textContent = message;
+    bookingAlert.style.color = type === "error" ? "var(--destructive)" : "var(--fg)";
+    bookingAlert.style.borderColor = type === "error" ? "hsla(0,72%,51%,.25)" : "var(--border)";
+    bookingAlert.style.background = type === "error" ? "hsla(0,72%,51%,.06)" : "var(--card-bg)";
+  }
+
+  function hideAlert() {
+    bookingAlert.style.display = "none";
+    bookingAlert.textContent = "";
+  }
+
+  function showAllTrips() {
+    selectableTrips.forEach(card => {
+      card.style.display = "flex";
+      card.style.borderColor = "var(--border)";
+      card.style.boxShadow = "var(--shadow)";
+    });
+  }
+
+  function showOnlySelectedTrip(tripKey) {
+    selectableTrips.forEach(card => {
+      const cardTrip = card.getAttribute("data-trip");
+
+      if (cardTrip === tripKey) {
+        card.style.display = "flex";
+        card.style.borderColor = "var(--accent)";
+        card.style.boxShadow = "var(--shadow-md)";
+      } else {
+        card.style.display = "none";
+      }
+    });
+  }
+
+  function setSelectedTrip(tripKey) {
+    selectedTripKey = tripKey;
+    tripSelect.value = tripKey;
+    showOnlySelectedTrip(tripKey);
+    hideAlert();
+  }
+
+  function hideModals() {
+    successModal.classList.remove("active");
+  }
+
+  tripSelect.addEventListener("change", function () {
+    if (!this.value) {
+      selectedTripKey = "";
+      showAllTrips();
+      return;
+    }
+
+    setSelectedTrip(this.value);
+  });
+
+  selectableTrips.forEach(card => {
+    card.addEventListener("click", function () {
+      const tripKey = this.getAttribute("data-trip");
+      setSelectedTrip(tripKey);
+    });
+  });
+
+  function confirmBooking() {
+    const val = document.getElementById("tripSelect").value;
+    if (!val) return;
+
+    const fullName = document.getElementById("fullName").value.trim();
+    const email = document.getElementById("email").value.trim();
+
+    if (!fullName) {
+      alert("Please enter your full name.");
+      return;
+    }
+
+    if (!email) {
+      alert("Please enter your email.");
+      return;
+    }
+
+    const t = trips[val];
+
+    confirmBookingBtn.disabled = true;
+    confirmBookingBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Booking...`;
+
+    setTimeout(() => {
+      document.getElementById("successMsg").textContent =
+        `Reservation confirmed for ${t.date} at ${t.time}`;
+
+      document.getElementById("qrInfo").textContent =
+        `${t.from} → ${t.to} | ${t.bus}`;
+
+      successModal.classList.add("active");
+
+      confirmBookingBtn.disabled = false;
+      confirmBookingBtn.innerHTML = `
+        <i class="fa-solid fa-circle-check"></i>
+        Confirm Booking
+      `;
+    }, 1200);
+  }
+
+  confirmBookingBtn.addEventListener("click", confirmBooking);
+
+  successModal.addEventListener("click", function (e) {
+    if (e.target === this) hideModals();
+  });
+
+  window.addEventListener("DOMContentLoaded", () => {
+    successModal.classList.remove("active");
+    showAllTrips();
+  });
+</script>
+</body>
+</html>
