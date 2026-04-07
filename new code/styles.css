@@ -1236,7 +1236,7 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   left: 0;
   width: 100vw; /* عرض الشاشة كاملاً */
   height: 100vh; /* طول الشاشة كاملاً */
-  background: rgba(0, 0, 0, 0); /* لون أسود صافي بشفافية 50% لبروز الرسالة */
+  background: transparent !important; /* لون أسود صافي بشفافية 50% لبروز الرسالة */
   display: flex;
   justify-content: center;
   align-items: center;
