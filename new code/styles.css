@@ -1231,39 +1231,22 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 
 /* Modal */
 .modal {
-  /* 1. يخلي الرسالة فوق كل شيء وفوق الناف بار */
-  position: fixed; 
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  
-  /* 2. يشيل اللون الأسود الكئيب ويخليه شفاف تماماً */
-  background: transparent !important; 
-  
-  /* 3. يوسط الرسالة في نص الشاشة بالضبط */
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
-  
-  /* 4. يسمح لك تضغطين على اللي ورا الرسالة */
-  pointer-events: none; 
+  z-index: 999;
 }
 
 .modal-content {
-  /* 5. يرجع يفعل الضغط داخل المربع الأبيض عشان الأزرار تشتغل */
-  pointer-events: auto; 
-  
   background: white;
   width: 90%;
   max-width: 420px;
-  border-radius: 20px;
-  padding: 30px;
-  
-  /* 6. يضيف ظل خفيف عشان تبرز الرسالة عن خلفية الصفحة */
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15); 
-  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
   text-align: center;
 }
 
