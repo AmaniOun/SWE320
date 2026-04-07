@@ -1,5 +1,5 @@
 
-#Project: SAII Application
+Project: SAII Application
 
 Contributors:
 - Amani Bin Oun | 445201317
