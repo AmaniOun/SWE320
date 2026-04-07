@@ -56,27 +56,27 @@
 </div>
 
 <!-- EDIT MODAL -->
-<div class="modal-overlay" id="edit-modal">
-  <div class="modal">
-    <div class="modal-header">
+<div class="modals-overlay" id="edit-modal">
+  <div class="modals">
+    <div class="modals-header">
       <h3>Edit Trip Schedule</h3>
       <button class="btn-modal-close" onclick="closeModal('edit-modal')">&#10005;</button>
     </div>
-    <div class="modal-grid">
-      <div class="modal-field"><label>From</label><div class="select-wrap"><select class="form-select" id="edit-from"><option>Mina</option><option>Arafat</option><option>Muzdalifah</option><option>Makkah</option><option>Madinah</option></select></div></div>
-      <div class="modal-field"><label>To</label><div class="select-wrap"><select class="form-select" id="edit-to"><option>Mina</option><option>Arafat</option><option>Muzdalifah</option><option>Makkah</option><option>Madinah</option></select></div></div>
-      <div class="modal-field"><label>Date</label><input class="form-input" type="date" id="edit-date"/></div>
-      <div class="modal-field"><label>Departure Time</label><input class="form-input" type="time" id="edit-time"/></div>
-      <div class="modal-field"><label>Total Seats</label><input class="form-input" type="number" id="edit-seats" min="1" max="200"/></div>
-      <div class="modal-field"><label>Bus Number</label><input class="form-input" type="text" id="edit-bus"/></div>
+    <div class="modals-grid">
+      <div class="modals-field"><label>From</label><div class="select-wrap"><select class="form-select" id="edit-from"><option>Mina</option><option>Arafat</option><option>Muzdalifah</option><option>Makkah</option><option>Madinah</option></select></div></div>
+      <div class="modals-field"><label>To</label><div class="select-wrap"><select class="form-select" id="edit-to"><option>Mina</option><option>Arafat</option><option>Muzdalifah</option><option>Makkah</option><option>Madinah</option></select></div></div>
+      <div class="modals-field"><label>Date</label><input class="form-input" type="date" id="edit-date"/></div>
+      <div class="modals-field"><label>Departure Time</label><input class="form-input" type="time" id="edit-time"/></div>
+      <div class="modals-field"><label>Total Seats</label><input class="form-input" type="number" id="edit-seats" min="1" max="200"/></div>
+      <div class="modals-field"><label>Bus Number</label><input class="form-input" type="text" id="edit-bus"/></div>
     </div>
     <button class="btn btn-accent btn-full" style="margin-top:1.1rem;" onclick="saveEdit()">Save Changes</button>
   </div>
 </div>
 
 <!-- DELETE MODAL -->
-<div class="modal-overlay" id="delete-modal">
-  <div class="modal confirm-modal">
+<div class="modals-overlay" id="delete-modal">
+  <div class="modals confirm-modal">
     <div class="confirm-icon-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/>

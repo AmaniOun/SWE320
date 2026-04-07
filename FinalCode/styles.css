@@ -551,19 +551,19 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 /* ══════════════════════════════════════
    MODALS
    ══════════════════════════════════════ */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s }
-.modal-overlay.open { opacity:1; pointer-events:all }
-.modal { background:var(--card-bg); border-radius:var(--radius); padding:1.75rem; width:480px; max-width:94vw; box-shadow:var(--shadow-lg); transform:scale(.96); transition:transform .2s }
-.modal-overlay.open .modal { transform:scale(1) }
-.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem }
-.modal-header h3 { font-size:1rem; font-weight:700; color:var(--fg) }
+.modals-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .2s }
+.modals-overlay.open { opacity:1; pointer-events:all }
+.modals { background:var(--card-bg); border-radius:var(--radius); padding:1.75rem; width:480px; max-width:94vw; box-shadow:var(--shadow-lg); transform:scale(.96); transition:transform .2s }
+.modals-overlay.open .modals { transform:scale(1) }
+.modals-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem }
+.modals-header h3 { font-size:1rem; font-weight:700; color:var(--fg) }
 .btn-modal-close { width:26px; height:26px; border-radius:50%; border:none; background:var(--muted); color:var(--muted-fg); font-size:1rem; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .15s }
 .btn-modal-close:hover { background:var(--secondary); color:var(--fg) }
-.modal-grid  { display:grid; grid-template-columns:1fr 1fr; gap:.875rem }
-.modal-field { display:flex; flex-direction:column; gap:.3rem }
-.modal-field label { font-size:.78rem; font-weight:600; color:var(--muted-fg) }
-.modal-field .form-input,
-.modal-field .form-select { font-size:.85rem }
+.modals-grid  { display:grid; grid-template-columns:1fr 1fr; gap:.875rem }
+.modals-field { display:flex; flex-direction:column; gap:.3rem }
+.modals-field label { font-size:.78rem; font-weight:600; color:var(--muted-fg) }
+.modals-field .form-input,
+.modals-field .form-select { font-size:.85rem }
 .confirm-modal     { width:360px; text-align:center }
 .confirm-icon-wrap { width:48px; height:48px; background:hsla(0,72%,51%,.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem }
 .confirm-icon-wrap svg { width:24px; height:24px; color:var(--destructive) }
