@@ -35,7 +35,7 @@
 html { scroll-behavior:smooth }
 body {
   font-family:'Inter',sans-serif;
-  background:var(--bg);
+  background:var(--bg) !important;
   color:var(--fg);
   min-height:100vh;
   line-height:1.6;
@@ -1232,20 +1232,35 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 /* Modal */
 .modal {
   position: fixed;
-  inset: 0;
-  background: transparent; /* هنا غيرناه من rgba إلى شفاف */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;  /* لضمان عرض الشاشة كاملاً */
+  height: 100vh; /* لضمان طول الشاشة كاملاً */
+  background: rgba(15, 23, 42, 0.6); /* تغميق الخلفية قليلاً لبروز الرسالة */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
-  pointer-events: none; /* إضافة اختيارية: تسمح بالضغط على ما خلف الرسالة */
+  z-index: 9999; /* ارفع الرقم للتأكد أنه فوق الـ Navbar */
 }
 
 .modal-content {
-  pointer-events: auto; /* لضمان أن الأزرار داخل الرسالة لا تزال تعمل */
+
   background: white;
-  /* أضيفي ظل خفيف للرسالة البيضاء لكي لا تختفي مع خلفية الصفحة */
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+
+  width: 90%;
+
+  max-width: 420px;
+
+  border-radius: 16px;
+
+  padding: 24px;
+
+  position: relative;
+
+  text-align: center;
+
 }
 
 .modal-content h3 {
