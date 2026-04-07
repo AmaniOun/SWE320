@@ -14,16 +14,24 @@ body {
 .navbar {
   background: #16213e;
   color: white;
+  padding: 14px 28px;
+}
+
+/* 🔥 مهم */
+.navbar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 28px;
   gap: 20px;
 }
 
 .logo {
   font-size: 20px;
   font-weight: bold;
+}
+
+.logo-img {
+  height: 40px;
 }
 
 .nav-links {
@@ -33,6 +41,8 @@ body {
   justify-content: center;
 }
 
+/* 🔥 إصلاح الروابط */
+.nav-link,
 .nav-links a,
 .nav-right a {
   color: #e5e7eb;
@@ -40,6 +50,7 @@ body {
   font-size: 14px;
 }
 
+.nav-link.active,
 .nav-links a.active {
   background: #f4b860;
   color: #1f2937;
@@ -60,41 +71,6 @@ body {
   width: 90%;
   max-width: 1100px;
   margin: 30px auto;
-}
-
-.page-header h1 {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-
-.page-header p {
-  color: #6b7280;
-  margin-bottom: 24px;
-}
-
-/* Alert */
-.alert {
-  margin-bottom: 18px;
-  padding: 14px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.alert.success {
-  background: #eaf7ee;
-  color: #1f7a3f;
-  border: 1px solid #b7e4c7;
-}
-
-.alert.error {
-  background: #fdecec;
-  color: #b42318;
-  border: 1px solid #f5c2c7;
-}
-
-.hidden {
-  display: none;
 }
 
 /* Booking Cards */
@@ -184,15 +160,19 @@ body {
   cursor: not-allowed;
 }
 
-/* Modal */
+/* 🔥 Modal FIX */
 .modal {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   z-index: 999;
+}
+
+.modal.active {
+  display: flex;
 }
 
 .modal-content {
@@ -248,7 +228,11 @@ body {
   color: white;
 }
 
-
-.modal.hidden {
-  display: none;
+/* 🔥 Footer */
+.site-footer {
+  background: #16213e;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  margin-top: 40px;
 }
