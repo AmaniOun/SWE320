@@ -1230,39 +1230,33 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 }
 
 /* Modal */
+
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;  /* لضمان عرض الشاشة كاملاً */
-  height: 100vh; /* لضمان طول الشاشة كاملاً */
-  background: rgba(0, 0, 0, 0.5); /* تغميق الخلفية قليلاً لبروز الرسالة */
+  inset: 0;
+  /* خليناها شفافة تماماً عشان يبان لون الصفحة اللي تبغينه */
+  background: transparent; 
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999; /* ارفع الرقم للتأكد أنه فوق الـ Navbar */
+  z-index: 999;
+  /* السطر الجاي مهم عشان ما تمنع الضغط على الصفحة */
+  pointer-events: none; 
 }
 
 .modal-content {
-
   background: white;
-
   width: 90%;
-
   max-width: 420px;
-
   border-radius: 16px;
-
   padding: 24px;
-
   position: relative;
-
   text-align: center;
-
+  /* نرجع نفعل الضغط للرسالة نفسها */
+  pointer-events: auto; 
+  /* ضيفي ظل خفيف للرسالة عشان تبرز عن الخلفية */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
 }
-
 .modal-content h3 {
   margin-bottom: 10px;
 }
