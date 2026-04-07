@@ -1233,7 +1233,7 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1254,11 +1254,11 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   margin-bottom: 10px;
 }
 
-/*.modal-content p {
+.modal-content p {
   color: #4b5563;
   margin-bottom: 22px;
 }
-*/
+
 .close-btn {
   position: absolute;
   top: 10px;
