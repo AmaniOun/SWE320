@@ -815,12 +815,17 @@ h3{font-size:1rem;font-weight:600;color:var(--fg)}
 /* Modal */
 .modal {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;  /* لضمان عرض الشاشة كاملاً */
+  height: 100vh; /* لضمان طول الشاشة كاملاً */
+  background: rgba(0, 0, 0, 0); /* تغميق الخلفية قليلاً لبروز الرسالة */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 9999; /* ارفع الرقم للتأكد أنه فوق الـ Navbar */
 }
 
 .modal-content {
