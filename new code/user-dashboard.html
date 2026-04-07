@@ -52,10 +52,15 @@
         </div>
       </div>
       <div style="display:flex;gap:.65rem;flex-wrap:wrap;">
-        <div class="user-hero-stat"><strong>3</strong> Upcoming</div>
-        <div class="user-hero-stat"><strong>8</strong> Days to Hajj</div>
-        <div class="user-hero-stat"><strong>2026</strong> Season</div>
-      </div>
+  <div class="user-hero-stat"><strong id="today-date"></strong> Today</div>
+</div>
+
+    <script>
+      const today = new Date();
+      const options = { day: 'numeric', month: 'short', year: 'numeric' };
+      document.getElementById('today-date').textContent = today.toLocaleDateString('en-US', options);
+    </script>
+
     </div>
   </div>
 
