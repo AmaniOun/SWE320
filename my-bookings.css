@@ -4,7 +4,7 @@
   padding: 0;
 }
 
-body {
+/* body { 
   font-family: Arial, sans-serif;
   background: #f7f8fc;
   color: #1f2937;
@@ -254,14 +254,49 @@ body {
 }
 
 
-.site-footer {
-  border-top:1px solid var(--border);
-  padding:1.25rem 1rem;
-  text-align:center;
-  background:var(--bg);
-  margin-top:auto;
+:root {
+  --bg:              hsl(40,20%,96%);        /* --background  */
+  --fg:              hsl(220,40%,20%);       /* --foreground  */
+  --card-bg:         hsl(40,20%,98%);        /* --card        */
+  --primary:         hsl(220,45%,20%);       /* navy          */
+  --primary-fg:      hsl(215, 30%, 26%);        /* text on navy  */
+  --accent:          hsl(37,45%,61%);        /* gold          */
+  --accent-fg:       hsl(220,40%,15%);       /* text on gold  */
+  --secondary:       hsl(40,25%,92%);
+  --muted:           hsl(40,15%,90%);
+  --muted-fg:        hsl(220,15%,50%);
+  --border:          hsl(40,15%,85%);
+  --input:           hsl(40,15%,85%);
+  --destructive:     hsl(0,72%,51%);
+  --radius:          0.75rem;
+  --shadow:          0 1px 8px rgba(26,35,64,.07);
+  --shadow-md:       0 4px 16px rgba(26,35,64,.10);
+  --shadow-lg:       0 8px 32px rgba(26,35,64,.16);
+  /* sidebar tokens */
+  --sidebar-bg:      hsl(220,45%,15%);
+  --sidebar-fg:      hsl(40,20%,92%);
+  --sidebar-accent:  hsl(220,40%,22%);
+  --sidebar-border:  hsl(220,35%,25%);
 }
-.site-footer p { color:var(--muted-fg); font-size:.8rem; }
 
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--fg);
+  min-height:100vh;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+img{display:block;max-width:100%}
 
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--muted)}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:99px}
 
