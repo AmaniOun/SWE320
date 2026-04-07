@@ -1271,11 +1271,11 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   margin-bottom: 10px;
 }
 
-.modal-content p {
+/*.modal-content p {
   color: #4b5563;
   margin-bottom: 22px;
 }
-
+*/
 .close-btn {
   position: absolute;
   top: 10px;
