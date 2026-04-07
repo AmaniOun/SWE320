@@ -40,7 +40,7 @@
 </header>
 
 <!-- ── CONTENT ── -->
-<div class="page-content">
+<!--<div class="page-content">
   <div class="page-header">
     <div>
       <h1 class="page-title">My Bookings</h1>
@@ -53,7 +53,7 @@
 </div>
 
 <!-- QR MODAL -->
-<div class="modal-overlay" id="qr-modal">
+<!--<div class="modal-overlay" id="qr-modal">
   <div class="modal" style="text-align:center;max-width:360px;">
     <div class="modal-header" style="justify-content:center;border-bottom:none;padding-bottom:0;">
       <h3 id="qr-title">Boarding Pass</h3>
@@ -68,7 +68,7 @@
 </div>
 
 <!-- EDIT MODAL -->
-<div class="modal-overlay" id="edit-modal">
+<!--<div class="modal-overlay" id="edit-modal">
   <div class="modal" style="max-width:400px;">
     <div class="modal-header">
       <h3>Modify Booking</h3>
@@ -96,7 +96,7 @@
 </div>
 
 <!-- CANCEL CONFIRM MODAL -->
-<div class="modal-overlay" id="cancel-modal">
+<!--<div class="modal-overlay" id="cancel-modal">
   <div class="modal confirm-modal">
     <div class="confirm-icon-wrap" style="background:hsla(0,72%,51%,.1);">
       <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem;color:var(--destructive);"></i>
@@ -110,7 +110,7 @@
   </div>
 </div>
 
-<!-- STATUS MODAL -->
+<!-- STATUS MODAL 
 <div class="modal-overlay" id="status-modal">
   <div class="modal confirm-modal">
     <div class="confirm-icon-wrap" id="status-icon-wrap">
@@ -122,7 +122,7 @@
   </div>
 </div>
 
-<!-- ── SHARED FOOTER ── -->
+<!-- ── SHARED FOOTER -
 <footer class="site-footer">
   <p>© 2026 SAII. All rights reserved.</p>
 </footer>
@@ -254,3 +254,211 @@
 </script>
 </body>
 </html>
+  -->
+
+<main class="container">
+  <h2>My Bookings</h2>
+  <div id="list"></div>
+</main>
+
+<div id="qrModal" class="modal">
+  <div class="modal-box" style="border-top: 5px solid var(--primary);">
+    <h3 id="qrTitle">Boarding Pass</h3>
+    <div style="margin: 20px 0; border: 2px dashed #ddd; padding: 20px; display: inline-block; position: relative;">
+        <i class="fa-solid fa-qrcode" style="font-size: 100px;"></i>
+        <div id="expiredBadge" style="display:none; position: absolute; top: 35%; left: 0; width: 100%; background: rgba(217, 45, 32, 0.9); color: white; padding: 5px; font-weight: 900; transform: rotate(-10deg);">EXPIRED</div></div>
+    <p id="qrInfo" style="font-weight: bold; font-size: 14px;"></p>
+    <button class="btn-primary" onclick="hideModals()">Close</button>
+  </div>
+</div>
+
+<div id="editModal" class="modal">
+  <div class="modal-box" style="text-align: left; border-top: 5px solid var(--accent);">
+    <h3 style="color: var(--primary);">Modify Booking</h3>
+    <p style="font-size: 13px; color: #666;">Choose new details for your seat:</p>
+    <label style="font-size: 12px; margin-top: 15px; display: block; font-weight: bold;">New Trip Date:</label>
+    <input type="date" id="newDateInput" min="2026-03-25">
+    <label style="font-size: 12px; margin-top: 10px; display: block; font-weight: bold;">New Route:</label>
+    <select id="newRouteInput">
+      <option value="Mina → Arafat">Mina → Arafat 08:00</option>
+      <option value="Arafat → Muzdalifah">Arafat → Muzdalifah 14:30</option>
+      <option value="Muzdalifah → Mina">Muzdalifah → Mina 22:00</option>
+    </select>
+    <button class="btn-primary" onclick="processEdit()">Update Now</button>
+    <button class="btn-ghost" onclick="hideModals()">Cancel</button>
+  </div>
+</div>
+
+<div id="cancelConfirmModal" class="modal">
+  <div class="modal-box" style="border-top: 5px solid var(--danger);">
+    <i class="fa-solid fa-triangle-exclamation" style="font-size: 50px; color: var(--danger);"></i>
+    <h3 style="margin-top:15px;">Confirm Cancellation</h3>
+    <p style="font-size: 14px; color: #666; margin-top: 10px;">This will release your seat. Are you sure?</p>
+    <button class="btn-primary" id="executeCancelBtn" style="background: var(--danger);">Yes, Cancel Booking</button>
+    <button class="btn-ghost" onclick="hideModals()">No, Keep it</button>
+  </div>
+</div>
+
+<div id="statusModal" class="modal">
+  <div class="modal-box">
+    <i id="statusIcon" class="fa-solid" style="font-size: 50px;"></i>
+    <h3 id="statusTitle" style="margin-top:15px;"></h3>
+    <p id="statusBody" style="font-size: 14px; color: #666; margin-top: 10px;"></p>
+    <button class="btn-primary" onclick="hideModals()">Understood</button>
+  </div>
+</div>
+
+<script>
+  let bookings = [
+    { id: 101, route: "Arafat → Muzdalifah", date: "2026-08-10", time: "14:30", bus: "Bus-07", tripID: "TRP-42", status: "confirmed" },
+    { id: 102, route: "Mina → Arafat", date: "2026-03-20", time: "08:00", bus: "Bus-03", tripID: "TRP-03", status: "confirmed" },
+    { id: 103, route: "Arafat → Muzdalifah", date: "2026-04-10", time: "14:30", bus: "Bus-07", tripID: "TRP-42", status: "cancelled" },
+    { id: 104, route: "Muzdalifah → Mina", date: "2026-03-24", time: "22:00", bus: "Bus-10", tripID: "TRP-10", status: "confirmed" }
+  ];
+
+  let activeId = null;
+
+  function drawList() {
+    const listDiv = document.getElementById("list");
+    listDiv.innerHTML = "";
+    const now = new Date("2026-03-25T00:00:00");
+
+    bookings.forEach(b => {
+      const tripTime = new Date(`${b.date}T${b.time}`);
+      const hoursDiff = (tripTime - now) / (1000 * 60 * 60);
+      
+      let color, badge, reason, canDo = false, qrStatus = "valid";
+
+      if (b.status === "cancelled") {
+        color = "var(--danger)"; badge = "badge-cancelled"; reason = "Cancelled"; qrStatus = "none";
+      } else if (hoursDiff < 0) {
+        color = "var(--warning)"; badge = "badge-past"; reason = "Past Trip"; qrStatus = "expired";
+      } else if (hoursDiff < 3) {
+        color = "var(--warning)"; badge = "badge-confirmed"; reason = "Locked (<3h)";
+      } else {
+        color = "var(--success)"; badge = "badge-confirmed"; reason = "Modify Trip"; canDo = true;
+      }
+
+      listDiv.innerHTML += `
+        <div class="booking-card" style="border-left-color: ${color}">
+          <div>
+            <div class="status-badge ${badge}">${b.status}</div>
+            <div class="booking-route">${b.route}</div>
+            <div class="booking-meta">
+              <span><i class="fa-regular fa-calendar"></i>${b.date}</span>
+              <span><i class="fa-regular fa-clock"></i>${b.time}</span>
+              <span><i class="fa-solid fa-bus"></i>${b.bus} (ID: ${b.tripID})</span>
+            </div></div>
+          <div class="booking-actions">
+            <button class="icon-btn btn-qr" data-reason="QR Code" onclick="openQR(${b.id}, '${qrStatus}')"><i class="fa-solid fa-qrcode"></i></button>
+            <button class="icon-btn btn-edit" data-reason="${reason}" onclick="openEdit(${b.id}, ${canDo}, '${reason}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="icon-btn btn-cancel" data-reason="Cancel" onclick="openCancel(${b.id}, ${canDo})"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>`;
+    });
+  }
+
+  function openQR(id, status) {
+    if(status === 'none') {
+        showStatus("Action Denied", "QR is not available for cancelled trips.", "var(--danger)", "fa-circle-xmark");
+        return;
+    }
+    const b = bookings.find(x => x.id === id);
+    document.getElementById("qrInfo").innerText = b.route + " | " + b.bus;
+    document.getElementById("expiredBadge").style.display = (status === 'expired') ? 'block' : 'none';
+    document.getElementById("qrModal").classList.add("active");
+  }
+
+  function openEdit(id, allowed, msg) {
+    if(!allowed) {
+      showStatus("Modification Locked", "You cannot modify this trip because it is " + msg, "var(--warning)", "fa-lock");
+    } else {
+      activeId = id;
+      const b = bookings.find(x => x.id === id);
+      document.getElementById("newDateInput").value = b.date;
+      document.getElementById("newRouteInput").value = b.route;
+      document.getElementById("editModal").classList.add("active");
+    }
+  }
+
+  function processEdit() {
+   /* const b = bookings.find(x => x.id === activeId);
+    b.date = document.getElementById("newDateInput").value;
+    b.route = document.getElementById("newRouteInput").value;
+    hideModals();
+    drawList();
+    showStatus("Success", "Your seat details have been updated successfully!", "var(--success)", "fa-circle-check");
+	*/
+	
+
+
+    // 1. البحث عن الحجز المطلوب
+    const b = bookings.find(x => x.id === activeId);
+    
+    // التأكد أن الحجز موجود قبل التعديل
+    if (b) {
+        // 2. سحب القيم الجديدة من الحقول
+        const newDate = document.getElementById("newDateInput").value;
+        const newRoute = document.getElementById("newRouteInput").value;
+        
+        // 3. تحديث البيانات في المصفوفة
+        b.date = newDate;
+        b.route = newRoute;
+
+        // 4. تحديث الوقت تلقائياً بناءً على الروت المختار (عشان الحسبة تظل صحيحة)
+        if (newRoute.includes("Mina → Arafat")) {
+            b.time = "08:00";
+        } else if (newRoute.includes("Arafat → Muzdalifah")) {
+            b.time = "14:30";
+        } else if (newRoute.includes("Muzdalifah → Mina")) {
+            b.time = "22:00";
+        }
+
+        // 5. إغلاق النوافذ وتحديث القائمة فوراً
+        hideModals();
+        drawList();
+
+        // 6. إظهار رسالة النجاح مع تفاصيل الروت والوقت الجديد
+        const successMsg = "Trip updated to: " + b.route + " at " + b.time;
+        showStatus("Success", successMsg, "var(--success)", "fa-circle-check");
+    }
+
+
+
+
+
+  }
+
+  function openCancel(id, allowed) {
+    if(!allowed) {
+      showStatus("Action Locked", "Past or cancelled trips cannot be modified.", "var(--warning)", "fa-lock");
+    } else {
+      activeId = id;
+      document.getElementById("cancelConfirmModal").classList.add("active");
+    }
+  }
+
+  document.getElementById("executeCancelBtn").onclick = function() {
+    bookings.find(x => x.id === activeId).status = "cancelled";
+    hideModals();
+    drawList();
+    showStatus("Cancelled", "The reservation has been cancelled successfully.", "var(--danger)", "fa-trash-can");
+  }
+
+  function showStatus(title, body, color, icon) {
+    document.getElementById("statusTitle").innerText = title;
+    document.getElementById("statusBody").innerText = body;
+    document.getElementById("statusIcon").className = "fa-solid " + icon;
+    document.getElementById("statusIcon").style.color = color;
+    document.getElementById("statusModal").classList.add("active");
+  }
+
+  function hideModals() {
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+  }
+
+  drawList();
+</script>
+</body>
+</html>
+  
