@@ -1,7 +1,6 @@
 <?php
 include('db_connection.php');
 
-// ── جلب الرحلات المتاحة (Scheduled أو Confirmed) ──
 $tripsResult = $conn->query("
     SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate, t.DepartureTime,
            t.TotalSeats, t.AvailableSeats, t.Status, b.Bus_Number
@@ -16,8 +15,6 @@ while ($row = $tripsResult->fetch_assoc()) {
     $trips[] = $row;
 }
 
-// ── جلب حجوزات المستخدم القادمة ──
-// مؤقتاً PilgrimID = 1 (لاحقاً تربطينه بالـ session)
 $pilgrimID = 1;
 $bookingsResult = $conn->query("
     SELECT t.Origin, t.Destination, t.DepartureDate, t.DepartureTime, b.Bus_Number
@@ -34,7 +31,6 @@ while ($row = $bookingsResult->fetch_assoc()) {
     $myBookings[] = $row;
 }
 
-// ── دوال مساعدة ──
 function fmtDate($d) {
     if (!$d) return '';
     $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
