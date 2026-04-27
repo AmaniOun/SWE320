@@ -61,10 +61,17 @@ CREATE TABLE `booking` (
 
 INSERT INTO `booking` (`BookingID`, `BookingDate`, `SeatNumber`, `BookingStatus`, `PilgrimID`, `TripID`) VALUES
 (1, '2025-05-01', 12, 'Confirmed', 1, 1),
-(2, '2025-05-02', 7, 'Confirmed', 2, 2),
-(3, '2025-05-03', 23, 'Confirmed', 3, 3),
-(4, '2025-05-04', 5, 'Cancelled', 1, 4),
-(5, '2025-05-05', 18, 'Confirmed', 2, 1);
+(2, '2025-05-03', 7, 'Confirmed', 2, 1),
+(3, '2025-05-06', 23, 'Confirmed', 3, 1),
+(4, '2025-05-08', 5, 'Confirmed', 1, 2),
+(5, '2026-04-05', 33, 'Confirmed', 2, 3),
+(6, '2026-04-08', 13, 'Cancelled', 2, 5),
+(7, '2026-04-10', 9, 'Confirmed', 3, 4),
+(8, '2026-04-11', 4, 'Cancelled', 3, 7),
+(9, '2026-04-12', 22, 'Confirmed', 1, 8),
+(10, '2026-04-12', 33, 'Confirmed', 2, 8),
+(11, '2026-04-13', 44, 'Confirmed', 3, 8),
+(12, '2026-04-16', 7, 'Confirmed', 1, 4);
 
 -- --------------------------------------------------------
 
@@ -177,11 +184,18 @@ CREATE TABLE `qrcode` (
 --
 
 INSERT INTO `qrcode` (`QR_Seq`, `BookingID`, `QR_Value`, `GeneratedAt`, `ExpiryTime`, `QR_Status`) VALUES
-(1, 1, 'QR-SAII-BK001-2025', '2025-05-01 10:00:00', '2025-06-04 05:00:00', 'Active'),
-(2, 2, 'QR-SAII-BK002-2025', '2025-05-02 11:00:00', '2025-06-08 07:00:00', 'Active'),
-(3, 3, 'QR-SAII-BK003-2025', '2025-05-03 09:00:00', '2025-06-09 08:00:00', 'Active'),
-(4, 4, 'QR-SAII-BK004-2025', '2025-05-04 12:00:00', '2025-06-09 19:30:00', 'Active'),
-(5, 5, 'QR-SAII-BK005-2025', '2025-05-05 08:00:00', '2025-06-10 03:00:00', 'Active');
+(1, 1, 'QR-SAII-BK001', '2025-05-01 09:15:00', '2025-05-08 05:00:00', 'Expired'),
+(2, 2, 'QR-SAII-BK002', '2025-05-03 11:40:00', '2025-05-08 05:00:00', 'Expired'),
+(3, 3, 'QR-SAII-BK003', '2025-05-06 08:25:00', '2025-05-08 05:00:00', 'Expired'),
+(4, 4, 'QR-SAII-BK004', '2025-05-08 14:10:00', '2025-05-10 07:00:00', 'Expired'),
+(5, 5, 'QR-SAII-BK005', '2026-04-05 10:55:00', '2026-06-12 08:00:00', 'Active'),
+(6, 6, 'QR-SAII-BK006', '2026-04-08 16:20:00', '2026-06-10 03:00:00', 'Active'),
+(7, 7, 'QR-SAII-BK007', '2026-04-10 07:05:00', '2026-06-10 19:30:00', 'Active'),
+(8, 8, 'QR-SAII-BK008', '2026-04-11 19:45:00', '2026-06-15 09:00:00', 'Active'),
+(9, 9, 'QR-SAII-BK009', '2026-04-12 13:30:00', '2026-06-19 15:00:00', 'Active'),
+(10, 10, 'QR-SAII-BK010', '2026-04-12 18:05:00', '2026-06-19 15:00:00', 'Active'),
+(11, 11, 'QR-SAII-BK011', '2026-04-13 09:50:00', '2026-06-19 15:00:00', 'Active'),
+(12, 12, 'QR-SAII-BK012', '2026-04-16 21:10:00', '2026-06-10 19:30:00', 'Active');
 
 -- --------------------------------------------------------
 
@@ -197,7 +211,7 @@ CREATE TABLE `trip` (
   `DepartureTime` time NOT NULL,
   `TotalSeats` int(11) NOT NULL,
   `AvailableSeats` int(11) NOT NULL,
-  `Status` enum('Scheduled','Confirmed','Completed','Cancelled') NOT NULL,
+  `Status` enum('Confirmed','Completed','Cancelled') NOT NULL,
   `Pickup_Location` varchar(150) DEFAULT NULL,
   `BusID` int(11) NOT NULL,
   `AdminID` int(11) NOT NULL
@@ -208,14 +222,14 @@ CREATE TABLE `trip` (
 --
 
 INSERT INTO `trip` (`TripID`, `Origin`, `Destination`, `DepartureDate`, `DepartureTime`, `TotalSeats`, `AvailableSeats`, `Status`, `Pickup_Location`, `BusID`, `AdminID`) VALUES
-(1, 'Masjid Al-Haram', 'Mina', '2025-06-04', '04:00:00', 30, 28, 'Scheduled', 'King Fahd Gate', 1, 1),
-(2, 'Makkah Hotel Zone', 'Mina', '2025-06-08', '06:00:00', 50, 49, 'Scheduled', 'Ibrahim Al-Khalil Pickup', 2, 1),
-(3, 'Mina', 'Arafat', '2025-06-09', '07:00:00', 45, 44, 'Scheduled', 'Mina Camp Gate 3', 3, 2),
-(4, 'Arafat', 'Muzdalifah', '2025-06-09', '18:30:00', 45, 44, 'Scheduled', 'Namira Mosque Exit', 3, 2),
-(5, 'Muzdalifah', 'Aziziyah', '2025-06-10', '02:00:00', 30, 30, 'Scheduled', 'Muzdalifah Zone B', 1, 1),
-(6, 'Mina', 'Masjid Al-Haram', '2025-06-10', '10:00:00', 35, 35, 'Scheduled', 'Mina Camp Gate 1', 2, 2),
-(7, 'Masjid Al-Haram', 'Masjid Al-Nabawi', '2025-06-13', '08:00:00', 50, 50, 'Scheduled', 'King Fahd Gate', 5, 1),
-(8, 'Jamarat', 'Makkah Hotel Zone', '2025-06-15', '14:00:00', 50, 50, 'Scheduled', 'Bab Salam Pickup', 5, 2);
+(1, 'Masjid Al-Haram', 'Mina', '2025-05-08', '04:00:00', 30, 27, 'Completed', 'King Fahd Gate', 1, 1),
+(2, 'Makkah Hotel Zone', 'Mina', '2025-05-10', '06:00:00', 50, 49, 'Completed', 'Ibrahim Al-Khalil Pickup', 2, 1),
+(3, 'Mina', 'Arafat', '2026-06-12', '07:00:00', 45, 44, 'Confirmed', 'Mina Camp Gate 3', 3, 2),
+(4, 'Arafat', 'Muzdalifah', '2026-06-10', '18:30:00', 45, 43, 'Confirmed', 'Namira Mosque Exit', 3, 2),
+(5, 'Muzdalifah', 'Aziziyah', '2026-06-10', '02:00:00', 30, 29, 'Cancelled', 'Muzdalifah Zone B', 1, 1),
+(6, 'Mina', 'Masjid Al-Haram', '2026-06-13', '10:00:00', 35, 35, 'Confirmed', 'Mina Camp Gate 1', 2, 2),
+(7, 'Masjid Al-Haram', 'Mina', '2026-06-15', '08:00:00', 50, 50, 'Confirmed', 'King Fahd Gate', 5, 1),
+(8, 'Jamarat', 'Makkah Hotel Zone', '2026-06-19', '14:00:00', 50, 47, 'Confirmed', 'Bab Salam Pickup', 5, 2);
 
 -- --------------------------------------------------------
 
@@ -239,7 +253,7 @@ INSERT INTO `user` (`UserID`, `Email`, `Password`, `User_Name`) VALUES
 (2, 'kha@saii.sa', '$2y$10$Eq2Gtwh6ewdyF.TmGrTRf.hgj5U/6qKPdhMqt2tWborxbEK4C1Mny', 'Khalid Al-Ghamdi'),
 (3, 'Ahmed@gmail.com', '$2y$10$g20QEKSCMTs62n842P8JeeB7a8ymBtdNTf8BY.OvpQI/CBw6JdhRC', 'Ahmed Al-Zahrani'),
 (4, 'Omar@gmail.com', '$2y$10$vAysI08Az6JpuGE.vjZTPuab40yrMo2.d.PmCbD8HIxNGflLlgtFG', 'Omar Al-Shehri'),
-(5, 'Yusuf @gmail.com', '$2y$10$jBVDb.dR5IJmpdHnO8lKBedBkCs.RV8ZEcJF5XWSAZfnxMuGAdhZG', 'Yusuf Al-Qahtani');
+(5, 'Yusuf@gmail.com', '$2y$10$jBVDb.dR5IJmpdHnO8lKBedBkCs.RV8ZEcJF5XWSAZfnxMuGAdhZG', 'Yusuf Al-Qahtani');
 
 --
 -- Indexes for dumped tables
@@ -322,7 +336,7 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `booking`
 --
 ALTER TABLE `booking`
-  MODIFY `BookingID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `BookingID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `bus`
@@ -334,13 +348,13 @@ ALTER TABLE `bus`
 -- AUTO_INCREMENT for table `heatmap`
 --
 ALTER TABLE `heatmap`
-  MODIFY `HeatmapID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `HeatmapID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `notification`
 --
 ALTER TABLE `notification`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `pilgrim`
@@ -352,7 +366,7 @@ ALTER TABLE `pilgrim`
 -- AUTO_INCREMENT for table `qrcode`
 --
 ALTER TABLE `qrcode`
-  MODIFY `QR_Seq` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `QR_Seq` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `trip`
