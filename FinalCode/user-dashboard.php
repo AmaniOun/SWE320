@@ -1,3 +1,79 @@
+<?php
+include('db_connection.php');
+
+// ── جلب الرحلات المتاحة (Scheduled أو Confirmed) ──
+$tripsResult = $conn->query("
+    SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate, t.DepartureTime,
+           t.TotalSeats, t.AvailableSeats, t.Status, b.Bus_Number
+    FROM trip t
+    JOIN bus b ON t.BusID = b.BusID
+    WHERE t.Status IN ('Scheduled','Confirmed')
+    ORDER BY t.DepartureDate ASC, t.DepartureTime ASC
+    LIMIT 3
+");
+$trips = [];
+while ($row = $tripsResult->fetch_assoc()) {
+    $trips[] = $row;
+}
+
+// ── جلب حجوزات المستخدم القادمة ──
+// مؤقتاً PilgrimID = 1 (لاحقاً تربطينه بالـ session)
+$pilgrimID = 1;
+$bookingsResult = $conn->query("
+    SELECT t.Origin, t.Destination, t.DepartureDate, t.DepartureTime, b.Bus_Number
+    FROM booking bk
+    JOIN trip t  ON bk.TripID  = t.TripID
+    JOIN bus  b  ON t.BusID    = b.BusID
+    WHERE bk.PilgrimID = $pilgrimID
+      AND bk.BookingStatus = 'Confirmed'
+      AND t.DepartureDate >= CURDATE()
+    ORDER BY t.DepartureDate ASC, t.DepartureTime ASC
+");
+$myBookings = [];
+while ($row = $bookingsResult->fetch_assoc()) {
+    $myBookings[] = $row;
+}
+
+// ── دوال مساعدة ──
+function fmtDate($d) {
+    if (!$d) return '';
+    $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    $parts = explode('-', $d);
+    return $months[(int)$parts[1] - 1] . ' ' . (int)$parts[2] . ', ' . $parts[0];
+}
+function fmtTime($t) {
+    if (!$t) return '';
+    $parts = explode(':', $t);
+    $h = (int)$parts[0];
+    return (($h % 12) ?: 12) . ':' . $parts[1] . ' ' . ($h >= 12 ? 'PM' : 'AM');
+}
+function getTripImage($destination) {
+    $map = [
+        'Mina'        => 'image/Mina.png',
+        'Muzdalifah'  => 'image/Muzdalifah.png',
+        'Arafat'      => 'image/Arafat.png',
+        'Makkah'      => 'image/Makkah.jpg',
+    ];
+    foreach ($map as $key => $img) {
+        if (stripos($destination, $key) !== false) return $img;
+    }
+    return 'image/default.jpg';
+}
+function getSeatBadge($total, $available) {
+    $booked = $total - $available;
+    $pct = $total > 0 ? round(($booked / $total) * 100) : 0;
+    if ($available <= 0)  return ['class' => 'full',      'text' => 'Full'];
+    if ($pct >= 75)       return ['class' => 'soon',      'text' => 'Filling Fast'];
+    return                       ['class' => 'available', 'text' => $available . ' seats left'];
+}
+function getFillClass($total, $available) {
+    $booked = $total - $available;
+    $pct = $total > 0 ? round(($booked / $total) * 100) : 0;
+    if ($pct >= 90) return 'fill-red';
+    if ($pct >= 65) return 'fill-yellow';
+    return 'fill-green';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,31 +86,31 @@
 
 <header class="navbar">
   <div class="navbar-inner">
-    <a href="user-dashboard.html" class="nav-logo">
+    <a href="user-dashboard.php" class="nav-logo">
       <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
     </a>
     <nav class="nav-links">
-      <a href="user-dashboard.html" class="nav-link active">Dashboard</a>
-      <a href="view-trips.html"   class="nav-link">View Trips</a>
-      <a href="add-booking.html"    class="nav-link">Book a Trip</a>
-      <a href="my-bookings.html"    class="nav-link">My Bookings</a>
-      <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+      <a href="user-dashboard.php"  class="nav-link active">Dashboard</a>
+      <a href="view-trips.php"      class="nav-link">View Trips</a>
+      <a href="add-booking.php"     class="nav-link">Book a Trip</a>
+      <a href="my-bookings.php"     class="nav-link">My Bookings</a>
+      <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
     </nav>
     <div class="nav-right">
       <span class="role-chip user">&#9679; User</span>
-      <span style="color:rgba(255,255,255,.65);font-size:.85rem;" id="user-name">Khalid</span>
-      <a href="signin.html" class="btn btn-sm btn-outline-dark">Logout</a>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">Khalid</span>
+      <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
     <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
   </div>
   <div class="nav-mobile" id="nm">
-    <a href="user-dashboard.html" class="nav-link active">Dashboard</a>
-    <a href="view-trips.html"   class="nav-link">View Trips</a>
-    <a href="add-booking.html"    class="nav-link">Book a Trip</a>
-    <a href="my-bookings.html"    class="nav-link">My Bookings</a>
-    <a href="user-heat-map.html"       class="nav-link">Heat Map</a>
+    <a href="user-dashboard.php"  class="nav-link active">Dashboard</a>
+    <a href="view-trips.php"      class="nav-link">View Trips</a>
+    <a href="add-booking.php"     class="nav-link">Book a Trip</a>
+    <a href="my-bookings.php"     class="nav-link">My Bookings</a>
+    <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
     <div class="nav-mobile-footer">
-      <a href="signin.html" class="btn btn-sm btn-outline-dark">Logout</a>
+      <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
   </div>
 </header>
@@ -44,31 +120,25 @@
   <div class="user-hero">
     <div class="user-hero-inner">
 
-       <!-- Notification Bell -->
-    <a href="notifications.html" 
-       style="position:absolute; margin-bottom:0.5rem; top:0.1rem; right:1rem; font-size:1.5rem; color:#333; text-decoration:none;"
-       title="View Notifications">
-       🔔
-    </a>
+      <!-- Notification Bell -->
+      <a href="notifications.php"
+         style="position:absolute;margin-bottom:0.5rem;top:0.1rem;right:1rem;font-size:1.5rem;color:#333;text-decoration:none;"
+         title="View Notifications">🔔</a>
 
-      
       <div class="user-hero-text">
-        <h2>Assalamu Alaikum, <span id="hero-name">Khalid</span> 👋</h2>
+        <h2>Assalamu Alaikum, <span>Khalid</span> 👋</h2>
         <p>Manage your Hajj journey from one place — book trips, track congestion, and stay on schedule.</p>
         <div class="user-hero-actions" style="margin-top:1.1rem;">
-          <a href="add-booking.html" class="btn btn-accent">+ Book a Trip</a>
-          <a href="view-trips.html" class="btn btn-outline-dark">Browse Trips →</a>
+          <a href="add-booking.php"  class="btn btn-accent">+ Book a Trip</a>
+          <a href="view-trips.php"   class="btn btn-outline-dark">Browse Trips →</a>
         </div>
       </div>
-      <div style="display:flex;gap:.65rem;flex-wrap:wrap;">
-  <div class="user-hero-stat"><strong id="today-date"></strong> Today</div>
-</div>
 
-    <script>
-      const today = new Date();
-      const options = { day: 'numeric', month: 'short', year: 'numeric' };
-      document.getElementById('today-date').textContent = today.toLocaleDateString('en-US', options);
-    </script>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap;">
+        <div class="user-hero-stat">
+          <strong><?= date('j M Y') ?></strong> Today
+        </div>
+      </div>
 
     </div>
   </div>
@@ -76,56 +146,124 @@
   <!-- ── Explore Trips ── -->
   <div class="section-header">
     <h2>Explore Available Trips</h2>
-    <a href="view-trips.html">View all trips →</a>
+    <a href="view-trips.php">View all trips →</a>
   </div>
 
-  <div class="trips-grid" id="trips-grid">
-    <!-- Rendered by JS -->
+  <div class="trips-grid">
+    <?php if (empty($trips)): ?>
+      <p style="color:var(--fg-muted)">No available trips at the moment.</p>
+    <?php else: ?>
+      <?php foreach ($trips as $t):
+        $booked    = $t['TotalSeats'] - $t['AvailableSeats'];
+        $pct       = $t['TotalSeats'] > 0 ? round(($booked / $t['TotalSeats']) * 100) : 0;
+        $badge     = getSeatBadge($t['TotalSeats'], $t['AvailableSeats']);
+        $fillClass = getFillClass($t['TotalSeats'], $t['AvailableSeats']);
+        $img       = getTripImage($t['Destination']);
+        $tripID    = htmlspecialchars($t['TripID']);
+      ?>
+      <div class="trip-photo-card"
+           onclick="showToast('Trip TRP-<?= $tripID ?> – tap Book a Trip to reserve your seat','info')">
+
+        <div class="trip-photo-wrap">
+          <div class="trip-photo-gradient">
+            <img src="<?= htmlspecialchars($img) ?>" class="trip-img"/>
+          </div>
+          <span class="trip-photo-badge <?= $badge['class'] ?>">
+            <?= htmlspecialchars($badge['text']) ?>
+          </span>
+        </div>
+
+        <div class="trip-photo-body">
+          <div class="trip-photo-route">
+            <?= htmlspecialchars($t['Origin']) ?>
+            <span class="arrow"> → </span>
+            <?= htmlspecialchars($t['Destination']) ?>
+          </div>
+          <div class="trip-photo-meta">
+            <span>📅 <?= fmtDate($t['DepartureDate']) ?></span>
+            <span>🕐 <?= fmtTime($t['DepartureTime']) ?></span>
+            <span>🚌 <?= htmlspecialchars($t['Bus_Number']) ?></span>
+          </div>
+          <div class="trip-photo-footer">
+            <div class="trip-seats-bar-wrap">
+              <div class="trip-seats-label"><?= $booked ?> / <?= $t['TotalSeats'] ?> seats booked</div>
+              <div class="trip-seats-bar">
+                <div class="trip-seats-fill <?= $fillClass ?>" style="width:<?= $pct ?>%"></div>
+              </div>
+            </div>
+            <a href="add-booking.php" class="btn btn-sm btn-accent"
+               onclick="event.stopPropagation()">Book</a>
+          </div>
+        </div>
+
+      </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
   </div>
 
   <div class="user-lower-grid">
 
+    <!-- My Upcoming Trips -->
     <div class="card">
       <div class="card-header">
         <h3>My Upcoming Trips</h3>
-        <a href="my-bookings.html" class="btn btn-sm btn-outline">View All</a>
+        <a href="my-bookings.php" class="btn btn-sm btn-outline">View All</a>
       </div>
-      <div class="card-body" id="upcoming-list"></div>
+      <div class="card-body">
+        <?php if (empty($myBookings)): ?>
+          <p style="color:var(--fg-muted)">No upcoming bookings.</p>
+        <?php else: ?>
+          <?php foreach ($myBookings as $b):
+            $day   = date('j',   strtotime($b['DepartureDate']));
+            $month = date('M',   strtotime($b['DepartureDate']));
+          ?>
+          <div class="upcoming-item">
+            <div class="upcoming-date-box">
+              <span class="day"><?= $day ?></span>
+              <span class="month"><?= $month ?></span>
+            </div>
+            <div class="upcoming-info">
+              <div class="upcoming-route">
+                <?= htmlspecialchars($b['Origin']) ?> → <?= htmlspecialchars($b['Destination']) ?>
+              </div>
+              <div class="upcoming-meta">
+                <?= fmtTime($b['DepartureTime']) ?> · <?= htmlspecialchars($b['Bus_Number']) ?>
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
     </div>
 
-    <!-- Quick Actions + Alerts -->
+    <!-- Quick Actions -->
     <div style="display:flex;flex-direction:column;gap:1.1rem;">
-
-      <!-- Quick Actions -->
       <div class="card">
         <div class="card-header"><h3>Quick Actions</h3></div>
         <div class="card-body">
           <div class="quick-actions-grid">
-            <a href="add-booking.html" class="quick-action-btn">
+            <a href="add-booking.php" class="quick-action-btn">
               <div class="quick-action-icon" style="background:hsla(37,45%,61%,.15);">🎫</div>
               Book a Trip
             </a>
-           <a href="view-trips.html" class="quick-action-btn">
+            <a href="view-trips.php" class="quick-action-btn">
               <div class="quick-action-icon" style="background:hsla(217,91%,60%,.1);">🚌</div>
               View Trips
             </a>
-            <a href="my-bookings.html" class="quick-action-btn">
+            <a href="my-bookings.php" class="quick-action-btn">
               <div class="quick-action-icon" style="background:hsla(142,71%,45%,.12);">📋</div>
               My Bookings
             </a>
-            <a href="user-heat-map.html" class="quick-action-btn">
+            <a href="user-heat-map.php" class="quick-action-btn">
               <div class="quick-action-icon" style="background:hsla(0,72%,51%,.08);">🗺️</div>
               Live Heat Map
             </a>
           </div>
         </div>
       </div>
-
-  
-
     </div>
-  </div>
 
+  </div>
 </div>
 
 <footer class="site-footer">
@@ -135,125 +273,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-
-var TRIPS = [
-  {
-    id: 'TRP-002', busNum: 'BUS-07',
-    from: 'Arafat', to: 'Muzdalifah',
-    date: '2026-08-15', time: '14:30',
-    seats: 45, booked: 10, status: 'active',
-    location: 'arafat',
-	image: 'image/Muzdalifah.png',
-    desc: 'Direct route from Arafat to Muzdalifah via the main pilgrim road.'
-  },
-  {
-    id: 'TRP-003', busNum: 'BUS-15',
-    from: 'Muzdalifah', to: 'Mina',
-    date: '2026-08-16', time: '06:00',
-    seats: 50, booked: 48, status: 'active',
-    location: 'muzdalifah',
-    image: 'image/Mina.png',
-    desc: 'Early morning departure from Muzdalifah to Mina for Jamarat.'
-  },
-  {
-    id: 'TRP-004', busNum: 'BUS-03',
-    from: 'Mina', to: 'Makkah',
-    date: '2026-08-16', time: '10:00',
-    seats: 55, booked: 30, status: 'active',
-    location: 'mina',
-    image: 'image/Makkah.jpg',
-    desc: 'Return trip from Mina to Makkah Al-Mukarramah city centre.'
-  }
-];
-
-/* ── Upcoming bookings (user's confirmed) ── */
-var MY_BOOKINGS = [
-  { route: 'Arafat → Muzdalifah', date: '2026-06-15', day: '15', month: 'Jun', time: '14:30', bus: 'BUS-07' },
-  { route: 'Muzdalifah → Mina',   date: '2026-06-16', day: '16', month: 'Jun', time: '06:00', bus: 'BUS-15' },
-  { route: 'Mina → Makkah',       date: '2026-06-16', day: '16', month: 'Jun', time: '10:00', bus: 'BUS-03' }
-];
-
-/* ── Helpers ── */
-function fmtDate(d) {
-  if (!d) return '';
-  var p = d.split('-');
-  var m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return m[parseInt(p[1])-1] + ' ' + parseInt(p[2]) + ', ' + p[0];
-}
-function fmtTime(t) {
-  if (!t) return '';
-  var p = t.split(':'), h = parseInt(p[0]);
-  return (h%12||12) + ':' + p[1] + ' ' + (h>=12?'PM':'AM');
-}
-
-/* ── Render Trip Photo Cards ── */
-function renderTripsGrid() {
-  var html = '';
-  TRIPS.forEach(function(t) {
-    var pct   = Math.round((t.booked / t.seats) * 100);
-    var avail = t.seats - t.booked;
-
-    var badgeClass, badgeText;
-    if (t.booked >= t.seats)    { badgeClass='full';      badgeText='Full'; }
-    else if (pct >= 75)         { badgeClass='soon';      badgeText='Filling Fast'; }
-    else                        { badgeClass='available'; badgeText=avail+' seats left'; }
-
-    var fillClass = pct >= 90 ? 'fill-red' : pct >= 65 ? 'fill-yellow' : 'fill-green';
-
-    html +=
-      '<div class="trip-photo-card" onclick="showToast(\'Trip \'+\''+t.id+'\'+\' – tap Book a Trip to reserve your seat\',\'info\')">' +
-
-        '<div class="trip-photo-wrap">' +
-          '<div class="trip-photo-gradient '+t.gradClass+'">' +
-            '<img src="'+t.image+'" class="trip-img"/>' +
-          '</div>' +
-          '<span class="trip-photo-badge '+badgeClass+'">'+badgeText+'</span>' +
-        '</div>' +
-
-        '<div class="trip-photo-body">' +
-          '<div class="trip-photo-route">' +
-            t.from +
-            '<span class="arrow"> → </span>' +
-            t.to +
-          '</div>' +
-          '<div class="trip-photo-meta">' +
-            '<span>📅 '+fmtDate(t.date)+'</span>' +
-            '<span>🕐 '+fmtTime(t.time)+'</span>' +
-            '<span>🚌 '+t.busNum+'</span>' +
-          '</div>' +
-          '<div class="trip-photo-footer">' +
-            '<div class="trip-seats-bar-wrap">' +
-              '<div class="trip-seats-label">'+t.booked+' / '+t.seats+' seats booked</div>' +
-              '<div class="trip-seats-bar"><div class="trip-seats-fill '+fillClass+'" style="width:'+pct+'%"></div></div>' +
-            '</div>' +
-            '<a href="add-booking.html" class="btn btn-sm btn-accent" onclick="event.stopPropagation()">Book</a>' +
-          '</div>' +
-        '</div>' +
-
-      '</div>';
-  });
-  document.getElementById('trips-grid').innerHTML = html;
-}
-
-/* ── Render Upcoming Bookings ── */
-function renderUpcoming() {
-  var html = '';
-  MY_BOOKINGS.forEach(function(b) {
-    html +=
-      '<div class="upcoming-item">' +
-        '<div class="upcoming-date-box">' +
-          '<span class="day">'+b.day+'</span>' +
-          '<span class="month">'+b.month+'</span>' +
-        '</div>' +
-        '<div class="upcoming-info">' +
-          '<div class="upcoming-route">'+b.route+'</div>' +
-          '<div class="upcoming-meta">'+fmtTime(b.time)+' · '+b.bus+'</div>' +
-        '</div>' +
-      '</div>';
-  });
-  document.getElementById('upcoming-list').innerHTML = html;
-}
-
 var _tt;
 function showToast(msg, type) {
   var t = document.getElementById('toast');
@@ -262,9 +281,6 @@ function showToast(msg, type) {
   clearTimeout(_tt);
   _tt = setTimeout(function(){ t.classList.remove('show'); }, 3200);
 }
-
-renderTripsGrid();
-renderUpcoming();
 </script>
 </body>
 </html>
