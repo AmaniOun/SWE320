@@ -1,5 +1,31 @@
 <?php
+session_start();
 include('db_connection.php');
+
+/* ───── فرض مستخدم للتجربة ───── */
+$_SESSION['UserID'] = 3;
+
+$userID = $_SESSION['UserID'];
+
+/* ───── جلب PilgrimID ───── */
+$pilgrimID = null;
+
+$stmt = $conn->prepare("SELECT PilgrimID FROM pilgrim WHERE UserID = ?");
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($row = $result->fetch_assoc()) {
+    $pilgrimID = $row['PilgrimID'];
+}
+
+/* 👇 DEBUG مهم جداً */
+if (!$pilgrimID) {
+    die("❌ No PilgrimID found for UserID = " . $userID);
+}
+
+/* ───── الرحلات ───── */
+$trips = [];
 
 $tripsResult = $conn->query("
     SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate, t.DepartureTime,
@@ -10,66 +36,83 @@ $tripsResult = $conn->query("
     ORDER BY t.DepartureDate ASC, t.DepartureTime ASC
     LIMIT 3
 ");
-$trips = [];
+
 while ($row = $tripsResult->fetch_assoc()) {
     $trips[] = $row;
 }
 
-$pilgrimID = 1;
-$bookingsResult = $conn->query("
+/* ───── الحجوزات ───── */
+$myBookings = [];
+
+$stmt = $conn->prepare("
     SELECT t.Origin, t.Destination, t.DepartureDate, t.DepartureTime, b.Bus_Number
     FROM booking bk
-    JOIN trip t  ON bk.TripID  = t.TripID
-    JOIN bus  b  ON t.BusID    = b.BusID
-    WHERE bk.PilgrimID = $pilgrimID
+    JOIN trip t ON bk.TripID = t.TripID
+    JOIN bus b ON t.BusID = b.BusID
+    WHERE bk.PilgrimID = ?
       AND bk.BookingStatus = 'Confirmed'
       AND t.DepartureDate >= CURDATE()
     ORDER BY t.DepartureDate ASC, t.DepartureTime ASC
 ");
-$myBookings = [];
-while ($row = $bookingsResult->fetch_assoc()) {
+
+$stmt->bind_param("i", $pilgrimID);
+$stmt->execute();
+$result = $stmt->get_result();
+
+while ($row = $result->fetch_assoc()) {
     $myBookings[] = $row;
 }
 
+/* ───── Functions ───── */
 function fmtDate($d) {
     if (!$d) return '';
     $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     $parts = explode('-', $d);
     return $months[(int)$parts[1] - 1] . ' ' . (int)$parts[2] . ', ' . $parts[0];
 }
+
 function fmtTime($t) {
     if (!$t) return '';
     $parts = explode(':', $t);
     $h = (int)$parts[0];
     return (($h % 12) ?: 12) . ':' . $parts[1] . ' ' . ($h >= 12 ? 'PM' : 'AM');
 }
+
 function getTripImage($destination) {
     $map = [
-        'Mina'        => 'image/Mina.png',
-        'Muzdalifah'  => 'image/Muzdalifah.png',
-        'Arafat'      => 'image/Arafat.png',
-        'Makkah'      => 'image/Makkah.jpg',
+        'Mina' => 'image/Mina.png',
+        'Muzdalifah' => 'image/Muzdalifah.png',
+        'Arafat' => 'image/Arafat.png',
+        'Masjid Al-Haram' => 'image/Makkah.jpg',
     ];
+
     foreach ($map as $key => $img) {
         if (stripos($destination, $key) !== false) return $img;
     }
+
     return 'image/default.jpg';
 }
+
 function getSeatBadge($total, $available) {
     $booked = $total - $available;
     $pct = $total > 0 ? round(($booked / $total) * 100) : 0;
-    if ($available <= 0)  return ['class' => 'full',      'text' => 'Full'];
-    if ($pct >= 75)       return ['class' => 'soon',      'text' => 'Filling Fast'];
-    return                       ['class' => 'available', 'text' => $available . ' seats left'];
+
+    if ($available <= 0) return ['class' => 'full', 'text' => 'Full'];
+    if ($pct >= 75) return ['class' => 'soon', 'text' => 'Filling Fast'];
+
+    return ['class' => 'available', 'text' => $available . ' seats left'];
 }
+
 function getFillClass($total, $available) {
     $booked = $total - $available;
     $pct = $total > 0 ? round(($booked / $total) * 100) : 0;
+
     if ($pct >= 90) return 'fill-red';
     if ($pct >= 65) return 'fill-yellow';
     return 'fill-green';
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,7 +137,9 @@ function getFillClass($total, $available) {
     </nav>
     <div class="nav-right">
       <span class="role-chip user">&#9679; User</span>
-      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">Khalid</span>
+<span style="color:rgba(255,255,255,.65);font-size:.85rem;">
+  <?= htmlspecialchars($_SESSION['User_Name']) ?>
+</span>
       <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
     <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
@@ -122,7 +167,7 @@ function getFillClass($total, $available) {
          title="View Notifications">🔔</a>
 
       <div class="user-hero-text">
-        <h2>Assalamu Alaikum, <span>Khalid</span> 👋</h2>
+        <h2>Assalamu Alaikum, <span><?= htmlspecialchars($_SESSION['User_Name']) ?></span> 👋</h2>
         <p>Manage your Hajj journey from one place — book trips, track congestion, and stay on schedule.</p>
         <div class="user-hero-actions" style="margin-top:1.1rem;">
           <a href="add-booking.php"  class="btn btn-accent">+ Book a Trip</a>
