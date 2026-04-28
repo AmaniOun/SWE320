@@ -141,10 +141,14 @@ CREATE TABLE `notification` (
 --
 
 INSERT INTO `notification` (`notification_id`, `message`, `sent_at`, `TripID`) VALUES
-(1, 'Traffic congestion', '2025-05-01 10:05:00', 1),
-(2, 'Road maintenance', '2025-05-07 20:00:00', 2),
-(3, 'The trip has been cancelled', '2026-04-26 16:00:00', 5),
-(4, 'The trip has been cancelled', '2026-04-28 12:00:00', 7);
+(1, 'Bus changed to BUS-001', '2025-05-01 10:05:00', 1),
+(2, 'Schedule Change: departure time changed from 05:00 to 06:00', '2025-05-07 20:00:00', 2),
+(3, 'The trip has been cancelled.', '2026-04-26 16:00:00', 5),
+(4, 'The trip has been cancelled.', '2026-04-28 12:00:00', 7),
+(5, 'Bus changed to BUS-003', '2026-05-01 19:40:50', 3),
+(6, 'Date changed from 2026-09-21 to 2026-09-25', '2026-05-01 21:40:22', 5),
+(7, 'Delay: departure time changed from 13:00 to 14:00', '2026-05-02 10:45:00', 8);
+
 
 -- --------------------------------------------------------
 
@@ -356,7 +360,7 @@ ALTER TABLE `heatmap`
 -- AUTO_INCREMENT for table `notification`
 --
 ALTER TABLE `notification`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `pilgrim`
