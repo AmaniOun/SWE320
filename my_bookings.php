@@ -20,39 +20,38 @@ try {
 }
 
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_booking_id'])) {
     $bookingID = $_POST['update_booking_id'];
     $newTripID = $_POST['new_trip_id'];
 
     try {
-        // 1. جلب بيانات الرحلة القديمة والتحقق من الوقت
-        $stmtOld = $pdo->prepare("SELECT t.DepartureDate, t.DepartureTime, b.TripID as OldTripID 
+       
+        $stmtOld = $pdo->prepare("SELECT t.DepartureDate, t.DepartureTime, b.TripID as OldTripID, bus.Capacity 
                                    FROM booking b 
                                    JOIN trip t ON b.TripID = t.TripID 
+                                   JOIN bus bus ON t.BusID = bus.BusID
                                    WHERE b.BookingID = ?");
         $stmtOld->execute([$bookingID]);
         $currentTrip = $stmtOld->fetch(PDO::FETCH_ASSOC);
 
-        if (!$currentTrip) {
-            die("Booking not found.");
-        }
+        if (!$currentTrip) die("Booking not found.");
 
+        date_default_timezone_set('Asia/Riyadh');
         $departureTime = strtotime($currentTrip['DepartureDate'] . ' ' . $currentTrip['DepartureTime']);
+        
         if (($departureTime - time()) < (3 * 3600)) { 
             header("Location: my_bookings.php?msg=too_late");
             exit();
         }
         
         $oldTripID = $currentTrip['OldTripID'];
+        $maxCapacity = $currentTrip['Capacity']; 
 
-        // إذا اختار نفس الرحلة لا داعي للتغيير
         if ($oldTripID == $newTripID) {
             header("Location: my_bookings.php?msg=updated");
             exit();
         }
 
-       
         $pdo->beginTransaction();
 
         
@@ -60,22 +59,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_booking_id']))
         $stmtLock->execute([$newTripID]);
         $seats = $stmtLock->fetchColumn();
 
-    
         if ($seats <= 0) {
             $pdo->rollBack();
             header("Location: my_bookings.php?msg=full");
             exit();
         }
 
+       
         
+       
         $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats - 1 WHERE TripID = ?")->execute([$newTripID]);
         
-     
-        $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats + 1 WHERE TripID = ?")->execute([$oldTripID]);
-
         
-        $newQRValue = "QR-SAII-BK" . str_pad($bookingID, 3, '0', STR_PAD_LEFT) . "-" . date("Y") . "-" . bin2hex(random_bytes(2));
+        $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats + 1 
+                       WHERE TripID = ? AND AvailableSeats < ?")
+            ->execute([$oldTripID, $maxCapacity]);
+
+       
         $pdo->prepare("UPDATE booking SET TripID = ? WHERE BookingID = ?")->execute([$newTripID, $bookingID]);
+
+       
+        $newQRValue = "QR-SAII-BK" . str_pad($bookingID, 3, '0', STR_PAD_LEFT) . "-" . date("Y") . "-" . bin2hex(random_bytes(2));
         $pdo->prepare("UPDATE qrcode SET QR_Value = ?, GeneratedAt = NOW() WHERE BookingID = ?")->execute([$newQRValue, $bookingID]);
 
         $pdo->commit(); 
@@ -88,32 +92,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_booking_id']))
     }
 }
 
-  
-    
-
-
 
 
 if (isset($_GET['cancel_id'])) {
     $id = $_GET['cancel_id'];
     
-  
-    $stmtT = $pdo->prepare("SELECT TripID FROM booking WHERE BookingID = ?");
-    $stmtT->execute([$id]);
-    $tripToRelease = $stmtT->fetchColumn();
+    
+    $stmtCheck = $pdo->prepare("SELECT t.DepartureDate, t.DepartureTime, b.TripID, b.BookingStatus 
+                                FROM booking b 
+                                JOIN trip t ON b.TripID = t.TripID 
+                                WHERE b.BookingID = ?");
+    $stmtCheck->execute([$id]);
+    $bookingData = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-    $stmt = $pdo->prepare("UPDATE booking SET BookingStatus = 'Cancelled' WHERE BookingID = ?");
-    if($stmt->execute([$id])) {
+    if ($bookingData && $bookingData['BookingStatus'] !== 'Cancelled') {
         
-      
-        if ($tripToRelease) {
-            $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats + 1 WHERE TripID = ?")->execute([$tripToRelease]);
+        $departureTime = strtotime($bookingData['DepartureDate'] . ' ' . $bookingData['DepartureTime']);
+        $currentTime = time();
+
+        
+        if ($currentTime >= $departureTime) {
+            header("Location: my_bookings.php?msg=too_late");
+            exit();
         }
 
-        header("Location: my_bookings.php?status=cancelled");
+        try {
+            $pdo->beginTransaction(); 
+
+            
+            $stmt = $pdo->prepare("UPDATE booking SET BookingStatus = 'Cancelled' WHERE BookingID = ?");
+            $stmt->execute([$id]);
+
+           
+            $stmtSeat = $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats + 1 WHERE TripID = ?");
+            $stmtSeat->execute([$bookingData['TripID']]);
+
+            $pdo->commit();
+            
+            header("Location: my_bookings.php?status=cancelled");
+            exit();
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            die("Error during cancellation: " . $e->getMessage());
+        }
+    } else {
+       
+        header("Location: my_bookings.php");
         exit();
     }
 }
+
+
+
 
 
 $tripsQuery = $pdo->query("SELECT TripID, Origin, Destination, DepartureDate, DepartureTime, AvailableSeats 
