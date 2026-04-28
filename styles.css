@@ -1142,7 +1142,7 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   display: none;
 }
 
-/* Booking Cards */
+
 .bookings-list {
   display: flex;
   flex-direction: column;
@@ -1316,8 +1316,6 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   box-shadow:var(--shadow-md);
 }
 
-
-/* التعديل لضمان ظهور المودال في منتصف الشاشة تماماً */
 .modal { 
     display: none; 
     position: fixed; 
@@ -1328,7 +1326,7 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
     background: rgba(0,0,0,0.6); 
     align-items: center; 
     justify-content: center; 
-    z-index: 9999; /* رقم عالي لضمان ظهوره فوق كل شيء */
+    z-index: 9999; 
 }
 
 .modal-box { 
@@ -1342,20 +1340,20 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-/* ختم EXPIRED للرحلات الماضية */
+
 .expired-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) rotate(-15deg); /* تدوير بسيط ليعطي شكل الختم */
-    background: rgba(217, 45, 32, 0.85); /* لون أحمر شفاف قليلاً */
+    transform: translate(-50%, -50%) rotate(-15deg); 
+    background: rgba(217, 45, 32, 0.85); 
     color: white;
     padding: 5px 15px;
     font-weight: bold;
     border-radius: 5px;
     font-size: 18px;
     z-index: 10;
-    pointer-events: none; /* عشان ما يمنع الضغط إذا احتجتي */
+    pointer-events: none; 
     border: 2px solid white;
 }
 
@@ -1428,22 +1426,30 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 
 .edit-select {
     width: 100% !important;
-    padding: 12px 15px !important;
-    border-radius: 8px !important;
-    border: 2px solid #1f3566 !important; 
-    background-color: white !important;
-    color: #1f3566 !important;
+    height: auto !important; /* يخلي الارتفاع مرن */
+    padding: 12px 40px 12px 15px !important; /* مساحة للنص وللسهم */
+    border-radius: 10px !important;
+    border: 2px solid var(--primary) !important;
+    background-color: #fff !important;
+    color: var(--primary) !important;
+    font-size: 14px !important;
     font-weight: 600 !important;
-    font-size: 15px !important;
     cursor: pointer !important;
-    margin-bottom: 15px !important;
-    appearance: none !important; 
-    -webkit-appearance: none !important;
-
+    appearance: none !important;
+    /* شكل السهم */
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f3566' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
     background-repeat: no-repeat !important;
     background-position: right 15px center !important;
-    background-size: 18px !important;
+    background-size: 16px !important;
+    margin-bottom: 10px !important;
+    display: block !important;
+}
+
+/* حل مشكلة تداخل النصوص في الموبايل */
+.edit-select option {
+    padding: 10px;
+    background: #fff;
+    color: #333;
 }
 
 
