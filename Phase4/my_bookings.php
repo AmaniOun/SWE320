@@ -2,14 +2,18 @@
 ob_start();
 session_start();
 
+/* ───── التحقق من تسجيل الدخول ───── */
+if (!isset($_SESSION['UserID'])) {
+    header("Location: login.php"); // أو صفحة تسجيل الدخول عندك
+    exit();
+}
 
-$_SESSION['UserID'] = 4; 
-$_SESSION['User_Name'] = "Omar Al-Shehri";
-
+$userID = $_SESSION['UserID'];
+$userName = $_SESSION['User_Name'] ?? 'User';
 $host = "localhost";
 $dbname = "saii";
 $dbuser = "root";
-$dbpass = ""; 
+$dbpass = "root"; 
 
 try {
     
@@ -439,8 +443,6 @@ function handleCancel(id, status) {
     if (status === 'Cancelled' || status === 'Past Trip') { showDenied("Denied", "Already processed."); } 
     else { selectedId = id; showModal("cancelModal"); }
 }
-
-
 
 
 
