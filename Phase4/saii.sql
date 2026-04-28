@@ -249,11 +249,11 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`UserID`, `Email`, `Password`, `User_Name`) VALUES
-(1, 'moh@saii.sa', '$2y$10$qqjgDqsQ0.QO4SXILf2lQeZHmeVD8j0Rjo5qwhY3CzLB63Zt4cF16', 'Mohammed Al-Otaibi'),
-(2, 'kha@saii.sa', '$2y$10$Eq2Gtwh6ewdyF.TmGrTRf.hgj5U/6qKPdhMqt2tWborxbEK4C1Mny', 'Khalid Al-Ghamdi'),
-(3, 'Ahmed@gmail.com', '$2y$10$g20QEKSCMTs62n842P8JeeB7a8ymBtdNTf8BY.OvpQI/CBw6JdhRC', 'Ahmed Al-Zahrani'),
-(4, 'Omar@gmail.com', '$2y$10$vAysI08Az6JpuGE.vjZTPuab40yrMo2.d.PmCbD8HIxNGflLlgtFG', 'Omar Al-Shehri'),
-(5, 'Yusuf@gmail.com', '$2y$10$jBVDb.dR5IJmpdHnO8lKBedBkCs.RV8ZEcJF5XWSAZfnxMuGAdhZG', 'Yusuf Al-Qahtani');
+(1, 'moh@saii.sa', '$$2y$10$mjRmylUR0LtJnTFyWT.0fOnAOsnM8sqLwMO1whx5xdl1uy36/N3Sm', 'Mohammed Al-Otaibi'),
+(2, 'kha@saii.sa', '$2y$10$6xwHWcBYfhZfg8GdxrSr1uDK0YpRSVc3yQTTaFlNlG1lUL87qhsVe', 'Khalid Al-Ghamdi'),
+(3, 'Ahmed@gmail.com', '$2y$10$957PaBR2n0D2W0DdvS/CgObgH72xRC814bCO6CCcWun9q1lV/77iy', 'Ahmed Al-Zahrani'),
+(4, 'Omar@gmail.com', '$2y$10$Fqpm2APQACQKa2J8Ke0UquN8ft.j/INsHBjBJnx93RSJJRhCotKfS', 'Omar Al-Shehri'),
+(5, 'Yusuf@gmail.com', '$2y$10$Q4CevIF.73IYV/JbBr7g8.roicgY.V3kV.AFA5utpmv57qlYd5dTy', 'Yusuf Al-Qahtani');
 
 --
 -- Indexes for dumped tables
