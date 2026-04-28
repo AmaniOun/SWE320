@@ -229,13 +229,13 @@ foreach($bookingsDB as &$b) {
 
 <header class="navbar">
   <div class="navbar-inner">
-    <a href="user-dashboard.html" class="nav-logo"><img src="image/saii.png" alt="SAII Logo" style="height:40px;"/></a>
+    <a href="user-dashboard.php" class="nav-logo"><img src="image/saii.png" alt="SAII Logo" style="height:40px;"/></a>
     <nav class="nav-links">
-      <a href="user-dashboard.html" class="nav-link">Dashboard</a>
-      <a href="view-trips.html" class="nav-link">View Trips</a>
-      <a href="add-booking.html" class="nav-link">Book a Trip</a>
+      <a href="user-dashboard.php" class="nav-link">Dashboard</a>
+      <a href="view-trips.php" class="nav-link">View Trips</a>
+      <a href="add-booking.php" class="nav-link">Book a Trip</a>
       <a href="my_bookings.php" class="nav-link active">My Bookings</a>
-      <a href="user-heat-map.html" class="nav-link">Heat Map</a>
+      <a href="user-heat-map.php" class="nav-link">Heat Map</a>
     </nav>
     <div class="nav-right">
       <span class="role-chip user">● User</span>
