@@ -91,7 +91,7 @@ function fmtTime($t) {
       <a href="user-dashboard.php"  class="nav-link">Dashboard</a>
       <a href="view-trips.php"      class="nav-link">View Trips</a>
       <a href="add-booking.php"     class="nav-link">Book a Trip</a>
-      <a href="my-bookings.php"     class="nav-link">My Bookings</a>
+      <a href="my_bookings.php"     class="nav-link">My Bookings</a>
       <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
     </nav>
     <div class="nav-right">
@@ -107,7 +107,7 @@ function fmtTime($t) {
     <a href="user-dashboard.php"  class="nav-link">Dashboard</a>
     <a href="view-trips.php"      class="nav-link">View Trips</a>
     <a href="add-booking.php"     class="nav-link">Book a Trip</a>
-    <a href="my-bookings.php"     class="nav-link">My Bookings</a>
+    <a href="my_bookings.php"     class="nav-link">My Bookings</a>
     <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
     <div class="nav-mobile-footer">
       <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
