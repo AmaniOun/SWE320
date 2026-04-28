@@ -1,53 +1,113 @@
 <?php
-//session_start();
+session_start();
 require_once 'db_connection.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action  = $_POST['action']  ?? '';
     $tripId  = (int)($_POST['TripID'] ?? 0);
 
+    /* =========================
+       CANCEL TRIP
+    ========================= */
     if ($action === 'cancel' && $tripId) {
+
         $stmt = mysqli_prepare($conn, "UPDATE trip SET Status='Cancelled' WHERE TripID=?");
         mysqli_stmt_bind_param($stmt, 'i', $tripId);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+
+        $msg = "The trip has been cancelled";
+        $stmt = mysqli_prepare($conn, "INSERT INTO notification (message, TripID) VALUES (?, ?)");
+        mysqli_stmt_bind_param($stmt, 'si', $msg, $tripId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
         $_SESSION['toast'] = ['msg' => "Trip #$tripId cancelled", 'type' => 'info'];
     }
 
+    /* =========================
+       DELETE TRIP
+    ========================= */
     if ($action === 'delete' && $tripId) {
-        $stmt = mysqli_prepare($conn, "DELETE FROM notification WHERE TripID=?");
-        mysqli_stmt_bind_param($stmt, 'i', $tripId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
 
-        $stmt = mysqli_prepare($conn, "DELETE FROM trip WHERE TripID=?");
-        mysqli_stmt_bind_param($stmt, 'i', $tripId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+        mysqli_query($conn, "DELETE FROM notification WHERE TripID=$tripId");
+        mysqli_query($conn, "DELETE FROM trip WHERE TripID=$tripId");
+
         $_SESSION['toast'] = ['msg' => "Trip #$tripId deleted", 'type' => 'error'];
     }
 
+    /* =========================
+       EDIT TRIP + NOTIFICATION
+    ========================= */
     if ($action === 'edit' && $tripId) {
-        $origin      = mysqli_real_escape_string($conn, trim($_POST['Origin']      ?? ''));
-        $destination = mysqli_real_escape_string($conn, trim($_POST['Destination'] ?? ''));
-        $date        = mysqli_real_escape_string($conn, trim($_POST['DepartureDate'] ?? ''));
-        $time        = mysqli_real_escape_string($conn, trim($_POST['DepartureTime'] ?? ''));
-        $seats       = (int)($_POST['TotalSeats'] ?? 0);
-        $busNum      = mysqli_real_escape_string($conn, trim($_POST['Bus_Number']  ?? ''));
 
-        $busRes = mysqli_query($conn, "SELECT BusID FROM bus WHERE Bus_Number='$busNum' LIMIT 1");
-        $busRow = mysqli_fetch_assoc($busRes);
-        $busId  = $busRow ? $busRow['BusID'] : null;
+        $origin      = trim($_POST['Origin'] ?? '');
+        $destination = trim($_POST['Destination'] ?? '');
+        $date        = trim($_POST['DepartureDate'] ?? '');
+        $time        = trim($_POST['DepartureTime'] ?? '');
+        $seats       = (int)($_POST['TotalSeats'] ?? 0);
+        $busNum      = trim($_POST['Bus_Number'] ?? '');
+
+        // نجيب البيانات القديمة كاملة
+        $oldRes = mysqli_query($conn, "SELECT DepartureDate, DepartureTime, BusID, Origin, Destination FROM trip WHERE TripID=$tripId");
+        $oldRow = mysqli_fetch_assoc($oldRes);
+        $oldTime   = $oldRow['DepartureTime']  ?? null;
+        $oldDate   = $oldRow['DepartureDate']  ?? null;
+        $oldBusId  = $oldRow['BusID']          ?? null;
+
+        // نجيب BusID الجديد
+        $stmt = mysqli_prepare($conn, "SELECT BusID FROM bus WHERE Bus_Number=? LIMIT 1");
+        mysqli_stmt_bind_param($stmt, 's', $busNum);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $busRow = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+
+        $busId = $busRow['BusID'] ?? null;
 
         if ($busId) {
+
+            // تحديث الرحلة
             $stmt = mysqli_prepare($conn,
-                "UPDATE trip SET Origin=?, Destination=?, DepartureDate=?, DepartureTime=?,
-                 TotalSeats=?, BusID=? WHERE TripID=?");
-            mysqli_stmt_bind_param($stmt, 'ssssiii',
+                "UPDATE trip SET Origin=?, Destination=?, DepartureDate=?, DepartureTime=?, TotalSeats=?, BusID=? WHERE TripID=?");
+            mysqli_stmt_bind_param($stmt, 'sssssii',
                 $origin, $destination, $date, $time, $seats, $busId, $tripId);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
+
+            // 🔔 كل تغيير = إشعار منفصل في قاعدة البيانات
+            $changes = [];
+
+            if ($oldDate && $oldDate !== $date) {
+                $changes[] = "date changed from $oldDate to $date";
+            }
+
+            if ($oldTime && substr($oldTime, 0, 5) !== $time) {
+                $oldH = (int)explode(':', $oldTime)[0];
+                $newH = (int)explode(':', $time)[0];
+                $label = $newH > $oldH ? "Delay" : "Schedule Change";
+                $changes[] = "$label: departure time changed from " . substr($oldTime, 0, 5) . " to $time";
+            }
+
+            if ($oldBusId && $oldBusId != $busId) {
+                $changes[] = "bus changed to $busNum";
+            }
+
+            if ($oldRow['Origin'] !== $origin || $oldRow['Destination'] !== $destination) {
+                $changes[] = "Route changed from {$oldRow['Origin']} → {$oldRow['Destination']} to $origin → $destination";
+            }
+
+            if (!empty($changes)) {
+                // ✅ كل التغييرات في رسالة واحدة مفصولة بـ " | "
+                $msg = implode(" | ", $changes);
+                $stmt = mysqli_prepare($conn, "INSERT INTO notification (message, TripID) VALUES (?, ?)");
+                mysqli_stmt_bind_param($stmt, 'si', $msg, $tripId);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
+            }
+            // لو ما في تغييرات ما يُرسل إشعار
         }
+
         $_SESSION['toast'] = ['msg' => "Trip #$tripId updated", 'type' => 'success'];
     }
 
@@ -55,8 +115,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
+/* =========================
+   FETCH DATA
+========================= */
+
 $search = trim($_GET['q'] ?? '');
 $where  = '';
+
 if ($search) {
     $s = mysqli_real_escape_string($conn, $search);
     $where = "WHERE t.Origin LIKE '%$s%'
@@ -67,22 +132,26 @@ if ($search) {
 
 $trips = [];
 $res = mysqli_query($conn,
-    "SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate, t.DepartureTime,
-            t.TotalSeats, t.AvailableSeats, t.Status, t.Pickup_Location,
-            b.Bus_Number, b.BusID
+    "SELECT t.*, b.Bus_Number
      FROM trip t
      JOIN bus b ON t.BusID = b.BusID
      $where
      ORDER BY t.DepartureDate ASC, t.DepartureTime ASC");
+
 while ($row = mysqli_fetch_assoc($res)) {
     $trips[] = $row;
 }
 
+// جلب الباصات
 $buses = [];
-$bRes = mysqli_query($conn, "SELECT BusID, Bus_Number FROM bus ORDER BY Bus_Number");
-while ($bRow = mysqli_fetch_assoc($bRes)) {
-    $buses[] = $bRow;
+$busRes = mysqli_query($conn, "SELECT BusID, Bus_Number FROM bus ORDER BY Bus_Number ASC");
+while ($busRow = mysqli_fetch_assoc($busRes)) {
+    $buses[] = $busRow;
 }
+
+/* =========================
+   HELPERS
+========================= */
 
 function fmtTime($t) {
     if (!$t) return '';
@@ -90,6 +159,7 @@ function fmtTime($t) {
     $h = (int)$h;
     return (($h % 12) ?: 12) . ':' . $m . ' ' . ($h >= 12 ? 'PM' : 'AM');
 }
+
 function fmtDate($d) {
     if (!$d) return '';
     $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -177,8 +247,9 @@ unset($_SESSION['toast']);
       <?php foreach ($trips as $t):
         $booked = (int)$t['TotalSeats'] - (int)$t['AvailableSeats'];
         $statusClass = strtolower($t['Status']);
-        if (in_array($statusClass, ['scheduled','confirmed'])) $statusClass = 'active';
+        if ($statusClass === 'confirmed') $statusClass = 'active';
         elseif ($statusClass === 'completed') $statusClass = 'info';
+        elseif ($statusClass === 'cancelled') $statusClass = 'cancelled';
       ?>
       <div class="trip-card">
         <div class="trip-card-top">
@@ -236,7 +307,6 @@ unset($_SESSION['toast']);
         <?php endif; ?>
 
         <div class="trip-actions">
-          <!-- زر التعديل يفتح المودال -->
           <button class="btn btn-sm btn-outline"
             onclick="openEdit(
               <?= $t['TripID'] ?>,
@@ -248,7 +318,7 @@ unset($_SESSION['toast']);
               '<?= htmlspecialchars(addslashes($t['Bus_Number'])) ?>'
             )">✏ Edit</button>
 
-          <?php if (in_array($t['Status'], ['Scheduled','Confirmed'])): ?>
+          <?php if ($t['Status'] === 'Confirmed'): ?>
           <form method="POST" style="display:inline;">
             <input type="hidden" name="action"  value="cancel"/>
             <input type="hidden" name="TripID"  value="<?= $t['TripID'] ?>"/>
