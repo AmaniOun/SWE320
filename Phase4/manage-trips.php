@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $changes = [];
 
             if ($oldDate && $oldDate !== $date) {
-                $changes[] = "date changed from $oldDate to $date";
+                $changes[] = "Date changed from $oldDate to $date";
             }
 
             if ($oldTime && substr($oldTime, 0, 5) !== $time) {
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($oldBusId && $oldBusId != $busId) {
-                $changes[] = "bus changed to $busNum";
+                $changes[] = "Bus changed to $busNum";
             }
 
             if ($oldRow['Origin'] !== $origin || $oldRow['Destination'] !== $destination) {

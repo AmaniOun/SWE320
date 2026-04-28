@@ -42,14 +42,15 @@ $result = $stmt->get_result();
     $notifCount = 0;
 
     $stmt = $conn->prepare("
-        SELECT COUNT(DISTINCT n.notification_id) AS cnt
-        FROM notification n
-        JOIN trip t ON n.TripID = t.TripID
-        JOIN booking bk ON bk.TripID = t.TripID
-        WHERE bk.PilgrimID = ?
-          AND bk.BookingStatus = 'Confirmed'
-          AND t.DepartureDate >= CURDATE()
+    SELECT COUNT(DISTINCT n.notification_id) AS cnt
+    FROM notification n
+    JOIN trip t ON n.TripID = t.TripID
+    JOIN booking bk ON bk.TripID = t.TripID
+    WHERE bk.PilgrimID = ?
+      AND bk.BookingStatus = 'Confirmed'
+      AND t.DepartureDate >= CURDATE()
     ");
+
     $stmt->bind_param("i", $pilgrimID);
     $stmt->execute();
     $result = $stmt->get_result();

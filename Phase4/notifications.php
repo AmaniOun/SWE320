@@ -69,7 +69,6 @@ while ($row = $result->fetch_assoc()) {
 /* ───── Format helpers ───── */
 function fmtTime24($t) {
     if (!$t) return '';
-    // عرض الوقت بصيغة 24 ساعة HH:MM
     return substr($t, 0, 5);
 }
 
