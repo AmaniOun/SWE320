@@ -24,12 +24,7 @@ if ($row = $result->fetch_assoc()) {
 /* ───── جلب PilgrimID ───── */
 $pilgrimID = null;
 
-$stmt = $conn->prepare("
-    SELECT PilgrimID 
-    FROM pilgrim 
-    WHERE UserID = ?
-    LIMIT 1
-");
+$stmt = $conn->prepare("SELECT PilgrimID FROM pilgrim WHERE UserID = ? LIMIT 1");
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -38,10 +33,26 @@ if ($row = $result->fetch_assoc()) {
     $pilgrimID = $row['PilgrimID'];
 }
 
-/* ───── إذا ما عنده ملف حاج ───── */
 if (!$pilgrimID) {
     header("Location: login.php");
     exit();
+}
+
+/* ───── عدد الإشعارات الخاصة برحلات الحاج ───── */
+$notifCount = 0;
+
+$stmt = $conn->prepare("
+    SELECT COUNT(DISTINCT n.notification_id) AS cnt
+    FROM notification n
+    JOIN booking bk ON bk.TripID = n.TripID
+    WHERE bk.PilgrimID = ?
+      AND bk.BookingStatus = 'Confirmed'
+");
+$stmt->bind_param("i", $pilgrimID);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($row = $result->fetch_assoc()) {
+    $notifCount = (int)$row['cnt'];
 }
 
 /* ───── الرحلات المتاحة ───── */
@@ -58,28 +69,22 @@ $tripsResult = $conn->query("
         t.AvailableSeats,
         t.Status,
         b.Bus_Number,
-
         (t.TotalSeats - t.AvailableSeats) AS BookedSeats,
-
         CASE 
             WHEN t.TotalSeats > 0 
             THEN ROUND(((t.TotalSeats - t.AvailableSeats) / t.TotalSeats) * 100)
             ELSE 0
         END AS FillPercent
-
     FROM trip t
     JOIN bus b ON t.BusID = b.BusID
-
     WHERE 
         t.Status = 'Confirmed'
         AND t.DepartureDate >= CURDATE()
         AND t.TotalSeats > 0
-
     ORDER BY 
         BookedSeats DESC,
         t.DepartureDate ASC,
         t.DepartureTime ASC
-
     LIMIT 3
 ");
 
@@ -99,7 +104,6 @@ $stmt = $conn->prepare("
       AND bk.BookingStatus = 'Confirmed'
       AND t.Status = 'Confirmed'
     ORDER BY t.DepartureDate ASC, t.DepartureTime ASC
-    
 ");
 
 $stmt->bind_param("i", $pilgrimID);
@@ -118,50 +122,43 @@ function fmtDate($d) {
     return $months[(int)$parts[1] - 1] . ' ' . (int)$parts[2] . ', ' . $parts[0];
 }
 
+// ✅ وقت 24 ساعة
 function fmtTime($t) {
     if (!$t) return '';
-    $parts = explode(':', $t);
-    $h = (int)$parts[0];
-    return (($h % 12) ?: 12) . ':' . $parts[1] . ' ' . ($h >= 12 ? 'PM' : 'AM');
+    return substr($t, 0, 5);
 }
 
 function getTripImage($destination) {
     $map = [
-        'Mina' => 'image/Mina.png',
-        'Muzdalifah' => 'image/Muzdalifah.png',
-        'Arafat' => 'image/Arafat.jpg',
-        'Masjid Al-Haram' => 'image/Makkah.jpg',
-        'Aziziyah' => 'image/Aziziyah.jpg',
-        'Jamarat' => 'image/jamarat.webp',
+        'Mina'           => 'image/Mina.png',
+        'Muzdalifah'     => 'image/Muzdalifah.png',
+        'Arafat'         => 'image/Arafat.jpg',
+        'Masjid Al-Haram'=> 'image/Makkah.jpg',
+        'Aziziyah'       => 'image/Aziziyah.jpg',
+        'Jamarat'        => 'image/jamarat.webp',
     ];
-
     foreach ($map as $key => $img) {
         if (stripos($destination, $key) !== false) return $img;
     }
-
     return 'image/default.jpg';
 }
 
 function getSeatBadge($total, $available) {
     $booked = $total - $available;
     $pct = $total > 0 ? round(($booked / $total) * 100) : 0;
-
-    if ($available <= 0) return ['class' => 'full', 'text' => 'Full'];
-    if ($pct >= 75) return ['class' => 'soon', 'text' => 'Filling Fast'];
-
-    return ['class' => 'available', 'text' => $available . ' seats left'];
+    if ($available <= 0) return ['class' => 'full',      'text' => 'Full'];
+    if ($pct >= 75)      return ['class' => 'soon',      'text' => 'Filling Fast'];
+    return                      ['class' => 'available', 'text' => $available . ' seats left'];
 }
 
 function getFillClass($total, $available) {
     $booked = $total - $available;
     $pct = $total > 0 ? round(($booked / $total) * 100) : 0;
-
     if ($pct >= 90) return 'fill-red';
     if ($pct >= 65) return 'fill-yellow';
     return 'fill-green';
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -169,6 +166,34 @@ function getFillClass($total, $available) {
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>My Dashboard — SAII Hajj Transport</title>
   <link rel="stylesheet" href="styles.css"/>
+  <style>
+    /* ── عداد الإشعارات ── */
+    .notif-bell-wrap {
+      position: absolute;
+      top: 0.1rem;
+      right: 1rem;
+      text-decoration: none;
+      font-size: 1.5rem;
+      color: #333;
+    }
+    .notif-badge {
+      position: absolute;
+      top: -6px;
+      right: -8px;
+      background: #e53935;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      line-height: 1;
+    }
+  </style>
 </head>
 <body class="page-wrapper">
 
@@ -186,9 +211,9 @@ function getFillClass($total, $available) {
     </nav>
     <div class="nav-right">
       <span class="role-chip user">&#9679; pilgrim</span>
-<span style="color:rgba(255,255,255,.65);font-size:.85rem;">
-  <?= htmlspecialchars($_SESSION['User_Name']) ?>
-</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">
+        <?= htmlspecialchars($_SESSION['User_Name']) ?>
+      </span>
       <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
     <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
@@ -210,10 +235,13 @@ function getFillClass($total, $available) {
   <div class="user-hero">
     <div class="user-hero-inner">
 
-      <!-- Notification Bell -->
-      <a href="notifications.php"
-         style="position:absolute;margin-bottom:0.5rem;top:0.1rem;right:1rem;font-size:1.5rem;color:#333;text-decoration:none;"
-         title="View Notifications">🔔</a>
+      <!-- ✅ الجرس مع عداد الإشعارات -->
+      <a href="notifications.php" class="notif-bell-wrap" title="View Notifications">
+        🔔
+        <?php if ($notifCount > 0): ?>
+          <span class="notif-badge"><?= $notifCount > 99 ? '99+' : $notifCount ?></span>
+        <?php endif; ?>
+      </a>
 
       <div class="user-hero-text">
         <h2>Assalamu Alaikum, <span><?= htmlspecialchars($_SESSION['User_Name']) ?></span> 👋</h2>
@@ -304,8 +332,8 @@ function getFillClass($total, $available) {
           <p style="color:var(--fg-muted)">No upcoming bookings.</p>
         <?php else: ?>
           <?php foreach ($myBookings as $b):
-            $day   = date('j',   strtotime($b['DepartureDate']));
-            $month = date('M',   strtotime($b['DepartureDate']));
+            $day   = date('j', strtotime($b['DepartureDate']));
+            $month = date('M', strtotime($b['DepartureDate']));
           ?>
           <div class="upcoming-item">
             <div class="upcoming-date-box">

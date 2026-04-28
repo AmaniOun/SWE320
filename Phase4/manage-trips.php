@@ -155,9 +155,7 @@ while ($busRow = mysqli_fetch_assoc($busRes)) {
 
 function fmtTime($t) {
     if (!$t) return '';
-    list($h, $m) = explode(':', $t);
-    $h = (int)$h;
-    return (($h % 12) ?: 12) . ':' . $m . ' ' . ($h >= 12 ? 'PM' : 'AM');
+    return substr($t, 0, 5);
 }
 
 function fmtDate($d) {

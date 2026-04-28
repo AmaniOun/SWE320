@@ -45,6 +45,7 @@ $notifResult = $conn->prepare("
         t.TripID,
         t.Origin,
         t.Destination,
+        t.DepartureDate,
         t.DepartureTime,
         b.Bus_Number
     FROM notification n
@@ -64,12 +65,16 @@ while ($row = $result->fetch_assoc()) {
     $notifications[] = $row;
 }
 
-/* ───── Time format ───── */
-function fmtTime($t) {
+/* ───── Format helpers ───── */
+function fmtTime24($t) {
     if (!$t) return '';
-    $parts = explode(':', $t);
-    $h = (int)$parts[0];
-    return (($h % 12) ?: 12) . ':' . $parts[1] . ' ' . ($h >= 12 ? 'PM' : 'AM');
+    // عرض الوقت بصيغة 24 ساعة HH:MM
+    return substr($t, 0, 5);
+}
+
+function fmtDate($d) {
+    if (!$d) return '';
+    return date('j M Y', strtotime($d));
 }
 ?>
 <!DOCTYPE html>
@@ -142,18 +147,17 @@ function fmtTime($t) {
 
             <div class="trip-photo-meta">
               <span>🚌 <?= htmlspecialchars($n['Bus_Number']) ?></span>
-              <span>🕐 <?= fmtTime($n['DepartureTime']) ?></span>
-              <span>📅 <?= date('j M Y, g:i A', strtotime($n['sent_at'])) ?></span>
+              <!-- ✅ وقت الرحلة بصيغة 24 ساعة -->
+              <span>🕐 <?= fmtTime24($n['DepartureTime']) ?></span>
+              <!-- ✅ تاريخ الرحلة بدل تاريخ الإشعار -->
+              <span>📅 <?= fmtDate($n['DepartureDate']) ?></span>
             </div>
 
             <div class="trip-photo-footer">
               <span style="color:#d9534f;">
                 ⚠ <?= htmlspecialchars($n['message']) ?>
               </span>
-              <button class="btn btn-sm btn-accent"
-                      onclick="acknowledge('TRP-<?= (int)$n['TripID'] ?>')">
-                Acknowledge
-              </button>
+
             </div>
 
           </div>
@@ -171,10 +175,6 @@ function fmtTime($t) {
 <div class="toast" id="toast"></div>
 
 <script>
-function acknowledge(id) {
-  showToast('You acknowledged notification for ' + id, 'info');
-}
-
 var _tt;
 function showToast(msg, type) {
   var t = document.getElementById('toast');
