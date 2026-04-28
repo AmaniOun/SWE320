@@ -223,7 +223,7 @@ CREATE TABLE `trip` (
 
 INSERT INTO `trip` (`TripID`, `Origin`, `Destination`, `DepartureDate`, `DepartureTime`, `TotalSeats`, `AvailableSeats`, `Status`, `Pickup_Location`, `BusID`, `AdminID`) VALUES
 (1, 'Masjid Al-Haram', 'Mina', '2025-05-08', '04:00:00', 30, 27, 'Completed', 'King Fahd Gate', 1, 1),
-(2, 'Makkah Hotel Zone', 'Mina', '2025-05-10', '06:00:00', 50, 49, 'Completed', 'Ibrahim Al-Khalil Pickup', 2, 1),
+(2, 'Arafat', 'Mina', '2025-05-10', '06:00:00', 50, 49, 'Completed', 'Ibrahim Al-Khalil Pickup', 2, 1),
 (3, 'Mina', 'Arafat', '2026-06-12', '07:00:00', 45, 44, 'Confirmed', 'Mina Camp Gate 3', 3, 2),
 (4, 'Arafat', 'Muzdalifah', '2026-06-10', '18:30:00', 45, 43, 'Confirmed', 'Namira Mosque Exit', 3, 2),
 (5, 'Muzdalifah', 'Aziziyah', '2026-06-10', '02:00:00', 30, 29, 'Cancelled', 'Muzdalifah Zone B', 1, 1),

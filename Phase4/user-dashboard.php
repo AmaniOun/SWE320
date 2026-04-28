@@ -130,6 +130,8 @@ function getTripImage($destination) {
         'Muzdalifah' => 'image/Muzdalifah.png',
         'Arafat' => 'image/Arafat.jpg',
         'Masjid Al-Haram' => 'image/Makkah.jpg',
+        'Aziziyah' => 'image/Aziziyah.jpg',
+        'Jamarat' => 'image/jamarat.webp',
     ];
 
     foreach ($map as $key => $img) {
@@ -182,7 +184,7 @@ function getFillClass($total, $available) {
       <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
     </nav>
     <div class="nav-right">
-      <span class="role-chip user">&#9679; User</span>
+      <span class="role-chip user">&#9679; pilgrim</span>
 <span style="color:rgba(255,255,255,.65);font-size:.85rem;">
   <?= htmlspecialchars($_SESSION['User_Name']) ?>
 </span>
