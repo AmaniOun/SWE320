@@ -2,7 +2,7 @@
 ob_start();
 session_start();
 
-// سطر تجريبي
+
 $_SESSION['UserID'] = 4; 
 $_SESSION['User_Name'] = "Omar Al-Shehri";
 
@@ -12,58 +12,147 @@ $dbuser = "root";
 $dbpass = ""; 
 
 try {
-    // التعديل: استخدام utf8mb4 لحل مشكلة اللغة العربية
+    
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $dbuser, $dbpass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Connection error: " . $e->getMessage());
 }
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_booking_id'])) {
     $bookingID = $_POST['update_booking_id'];
     $newTripID = $_POST['new_trip_id'];
 
-    // 1. توليد الكود الجديد (هذا السطر اللي كتبناه سوا)
-    $newQRValue = "QR-SAII-BK" . str_pad($bookingID, 3, '0', STR_PAD_LEFT) . "-" . date("Y") . "-" . bin2hex(random_bytes(2));
-
     try {
-       // نفتح عملية وحدة لتحديث الجدولين
-$pdo->beginTransaction();
-        // 2. تحديث الرحلة في جدول الحجوزات
-        $stmt1 = $pdo->prepare("UPDATE booking SET TripID = ? WHERE BookingID = ?");
-        $stmt1->execute([$newTripID, $bookingID]);
+       
+        $stmtOld = $pdo->prepare("SELECT t.DepartureDate, t.DepartureTime, b.TripID as OldTripID, bus.Capacity 
+                                   FROM booking b 
+                                   JOIN trip t ON b.TripID = t.TripID 
+                                   JOIN bus bus ON t.BusID = bus.BusID
+                                   WHERE b.BookingID = ?");
+        $stmtOld->execute([$bookingID]);
+        $currentTrip = $stmtOld->fetch(PDO::FETCH_ASSOC);
 
-        // 3. التحديث السحري: تحديث قيمة الـ QR في جدول الـ qrcode
-        $stmt2 = $pdo->prepare("UPDATE qrcode SET QR_Value = ?, GeneratedAt = NOW() WHERE BookingID = ?");
-        $stmt2->execute([$newQRValue, $bookingID]);
+        if (!$currentTrip) die("Booking not found.");
 
-        $pdo->commit(); // حفظ التغييرات في الجدولين
+        date_default_timezone_set('Asia/Riyadh');
+        $departureTime = strtotime($currentTrip['DepartureDate'] . ' ' . $currentTrip['DepartureTime']);
+        
+        if (($departureTime - time()) < (3 * 3600)) { 
+            header("Location: my_bookings.php?msg=too_late");
+            exit();
+        }
+        
+        $oldTripID = $currentTrip['OldTripID'];
+        $maxCapacity = $currentTrip['Capacity']; 
 
+        if ($oldTripID == $newTripID) {
+            header("Location: my_bookings.php?msg=updated");
+            exit();
+        }
+
+        $pdo->beginTransaction();
+
+        
+        $stmtLock = $pdo->prepare("SELECT AvailableSeats FROM trip WHERE TripID = ? FOR UPDATE");
+        $stmtLock->execute([$newTripID]);
+        $seats = $stmtLock->fetchColumn();
+
+        if ($seats <= 0) {
+            $pdo->rollBack();
+            header("Location: my_bookings.php?msg=full");
+            exit();
+        }
+
+       
+        
+       
+        $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats - 1 WHERE TripID = ?")->execute([$newTripID]);
+        
+        
+        $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats + 1 
+                       WHERE TripID = ? AND AvailableSeats < ?")
+            ->execute([$oldTripID, $maxCapacity]);
+
+       
+        $pdo->prepare("UPDATE booking SET TripID = ? WHERE BookingID = ?")->execute([$newTripID, $bookingID]);
+
+       
+        $newQRValue = "QR-SAII-BK" . str_pad($bookingID, 3, '0', STR_PAD_LEFT) . "-" . date("Y") . "-" . bin2hex(random_bytes(2));
+        $pdo->prepare("UPDATE qrcode SET QR_Value = ?, GeneratedAt = NOW() WHERE BookingID = ?")->execute([$newQRValue, $bookingID]);
+
+        $pdo->commit(); 
         header("Location: my_bookings.php?msg=updated");
         exit();
+
     } catch (Exception $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) $pdo->rollBack();
         die("Error: " . $e->getMessage());
     }
 }
-    
+
+
 
 if (isset($_GET['cancel_id'])) {
     $id = $_GET['cancel_id'];
     
-    // التعديل: تحديث الحالة فقط لضمان عدم تعارض المفاتيح الأجنبية
-    $stmt = $pdo->prepare("UPDATE booking SET BookingStatus = 'Cancelled' WHERE BookingID = ?");
-    if($stmt->execute([$id])) {
-        header("Location: my_bookings.php?status=cancelled");
+    
+    $stmtCheck = $pdo->prepare("SELECT t.DepartureDate, t.DepartureTime, b.TripID, b.BookingStatus 
+                                FROM booking b 
+                                JOIN trip t ON b.TripID = t.TripID 
+                                WHERE b.BookingID = ?");
+    $stmtCheck->execute([$id]);
+    $bookingData = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+    if ($bookingData && $bookingData['BookingStatus'] !== 'Cancelled') {
+        
+        $departureTime = strtotime($bookingData['DepartureDate'] . ' ' . $bookingData['DepartureTime']);
+        $currentTime = time();
+
+        
+        if ($currentTime >= $departureTime) {
+            header("Location: my_bookings.php?msg=too_late");
+            exit();
+        }
+
+        try {
+            $pdo->beginTransaction(); 
+
+            
+            $stmt = $pdo->prepare("UPDATE booking SET BookingStatus = 'Cancelled' WHERE BookingID = ?");
+            $stmt->execute([$id]);
+
+           
+            $stmtSeat = $pdo->prepare("UPDATE trip SET AvailableSeats = AvailableSeats + 1 WHERE TripID = ?");
+            $stmtSeat->execute([$bookingData['TripID']]);
+
+            $pdo->commit();
+            
+            header("Location: my_bookings.php?status=cancelled");
+            exit();
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            die("Error during cancellation: " . $e->getMessage());
+        }
+    } else {
+       
+        header("Location: my_bookings.php");
         exit();
     }
 }
 
-// جلب الرحلات المتاحة
-$tripsQuery = $pdo->query("SELECT TripID, Origin, Destination, DepartureDate FROM trip WHERE DepartureDate >= CURDATE()");
+
+
+
+
+$tripsQuery = $pdo->query("SELECT TripID, Origin, Destination, DepartureDate, DepartureTime, AvailableSeats 
+                           FROM trip 
+                           WHERE DepartureDate >= CURDATE() 
+                           AND AvailableSeats > 0");
 $availableTrips = $tripsQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// 3. جلب الحجوزات (استخدام LEFT JOIN لضمان ظهور الحجز دائمًا)
 $sql = "SELECT b.BookingID as id, b.BookingStatus as status, b.TripID,
                t.Origin, t.Destination, t.DepartureDate as date, t.DepartureTime as time, 
                bus.Bus_Number as bus, q.QR_Value
@@ -103,14 +192,21 @@ foreach($bookingsDB as &$b) {
             --warning: #f3a000; 
             --muted: #667085;
         }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f8f9fa; margin: 0; }
+        body {
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--fg);
+  min-height:100vh;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
         .container { width: 92%; max-width: 1100px; margin: 30px auto; min-height: 80vh; }
         .booking-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.04); border-left: 6px solid #ccc; }
         .status-confirmed { border-left-color: var(--success) !important; }
         .status-cancelled { border-left-color: var(--danger) !important; }
         .status-past { border-left-color: var(--warning) !important; }
         .status-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; display: inline-block; margin-bottom: 10px; }
-        .badge-confirmed { background: #e8f7ec; color: #1f7a3f; }
+        .badge-confirmed { background: #e8f7ec; color: #1f3566; }
         .badge-cancelled { background: #fdecec; color: #b42318; }
         .badge-past { background: #fff3e0; color: var(--warning); }
         .edit-form-container { background: #fcfcfc; border: 1px dashed var(--accent); padding: 20px; border-radius: 12px; margin: 15px 0; }
@@ -183,8 +279,63 @@ foreach($bookingsDB as &$b) {
         <button onclick="closeModal('deniedModal')" class="save-inline-btn">Understood</button>
     </div>
 </div>
+    
+    
+ <div id="successModal" class="modal">
+    <div class="modal-box">
+        <i class="fa-solid fa-circle-check" style="font-size:50px; color:var(--primary);"></i>
+        <h3 id="successTitle">Success!</h3>
+        <p id="successDesc"></p>
+        <button onclick="closeModal('successModal')" class="save-inline-btn">Awesome</button>
+    </div>
+</div>   
+    
+    
+    
+    
+    
+    
+    
+      
+<!-- ── SHARED FOOTER ── -->
+<footer class="site-footer">
+  <p>© 2026 SAII. All rights reserved.</p>
+</footer>   
+    
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script>
+<script >
+   
+window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const msg = urlParams.get('msg');
+    const status = urlParams.get('status');
+
+    if (msg === 'updated') {
+        
+        document.getElementById("successTitle").innerText = "Success!";
+        document.getElementById("successDesc").innerText = "Your booking has been updated successfully.";
+        showModal("successModal");
+    } 
+    else if (msg === 'too_late') {
+        showDenied("Too Late!", "Modification is only allowed up to 3 hours before departure.");
+    } 
+    else if (msg === 'full') {
+        showDenied("No Seats!", "The selected trip is fully booked.");
+    }
+
+    if (status === 'cancelled') {
+        document.getElementById("successTitle").innerText = "Cancelled";
+        document.getElementById("successDesc").innerText = "Your booking has been cancelled successfully.";
+        showModal("successModal"); // نستخدم مودال النجاح هنا أيضاً لأن الفعل تم بنجاح
+    }
+    
+    if (msg || status) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+};
+       
+  
 const bookings = <?php echo json_encode($bookingsDB); ?>;
 const availableTrips = <?php echo json_encode($availableTrips); ?>;
 const list = document.getElementById("bookingsList");
@@ -225,9 +376,14 @@ function render() {
                 <form id="route-edit-${b.id}" method="POST" action="my_bookings.php" style="display:none;" class="edit-form-container">
                     <input type="hidden" name="update_booking_id" value="${b.id}">
                     <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:8px; font-weight:bold;">Select New Destination:</label>
-                    <select name="new_trip_id" class="edit-select">
-                        ${availableTrips.map(t => `<option value="${t.TripID}" ${t.TripID == b.TripID ? 'selected' : ''}>${t.Origin} → ${t.Destination} (${t.DepartureDate})</option>`).join('')}
-                    </select>
+                
+<select name="new_trip_id" class="edit-select">
+    ${availableTrips.map(t => `
+        <option value="${t.TripID}" ${t.TripID == b.TripID ? 'selected' : ''}>
+            [ID: ${t.TripID}] ${t.Origin} → ${t.Destination} (${t.DepartureDate} | ${t.DepartureTime})
+        </option>
+    `).join('')}
+</select>
                     <div class="edit-actions">
                         <button type="submit" class="save-inline-btn"><i class="fa-solid fa-check"></i> Save Changes</button>
                         <button type="button" class="cancel-inline-btn" onclick="toggleEditMode('${b.id}', false)">Cancel</button>
@@ -284,10 +440,20 @@ function handleCancel(id, status) {
     else { selectedId = id; showModal("cancelModal"); }
 }
 
-// تم تصحيح الرابط هنا أيضاً ليكون my_bookings.php
+
+
+
+
+
+
+
 document.getElementById("confirmCancelBtn").onclick = () => { 
-    if(selectedId) window.location.href = "my_bookings.php?cancel_id=" + selectedId; 
+    if(selectedId) {
+        window.location.href = "my_bookings.php?cancel_id=" + selectedId; 
+    }
 };
+
+
 
 function showDenied(t, d) { 
     document.getElementById("deniedTitle").innerText = t; 
