@@ -142,8 +142,8 @@ CREATE TABLE `notification` (
 
 INSERT INTO `notification` (`notification_id`, `message`, `sent_at`, `TripID`) VALUES
 (1, 'Traffic congestion', '2025-05-01 10:05:00', 1),
-(2, 'Road maintenance', '2025-05-07 20:00:00', 2);
-(2, 'The trip has been cancelled', '2026-04-26 16:00:00', 5);
+(2, 'Road maintenance', '2025-05-07 20:00:00', 2),
+(2, 'The trip has been cancelled', '2026-04-26 16:00:00', 5),
 (2, 'The trip has been cancelled', '2026-04-28 12:00:00', 7);
 
 -- --------------------------------------------------------
