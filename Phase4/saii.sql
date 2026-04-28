@@ -229,7 +229,7 @@ INSERT INTO `trip` (`TripID`, `Origin`, `Destination`, `DepartureDate`, `Departu
 (5, 'Muzdalifah', 'Aziziyah', '2026-06-10', '02:00:00', 30, 29, 'Cancelled', 'Muzdalifah Zone B', 1, 1),
 (6, 'Mina', 'Masjid Al-Haram', '2026-06-13', '10:00:00', 35, 35, 'Confirmed', 'Mina Camp Gate 1', 2, 2),
 (7, 'Masjid Al-Haram', 'Mina', '2026-06-15', '08:00:00', 50, 50, 'Confirmed', 'King Fahd Gate', 5, 1),
-(8, 'Jamarat', 'Makkah Hotel Zone', '2026-06-19', '14:00:00', 50, 47, 'Confirmed', 'Bab Salam Pickup', 5, 2);
+(8, 'Jamarat', 'Masjid Al-Haram', '2026-06-19', '14:00:00', 50, 47, 'Confirmed', 'Bab Salam Pickup', 5, 2);
 
 -- --------------------------------------------------------
 

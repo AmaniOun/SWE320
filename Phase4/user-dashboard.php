@@ -2,15 +2,34 @@
 session_start();
 include('db_connection.php');
 
-/* ───── فرض مستخدم للتجربة ───── */
-$_SESSION['UserID'] = 4;
+/* ───── التأكد من تسجيل الدخول الحقيقي ───── */
+if (!isset($_SESSION['UserID'])) {
+    die("❌ You must login first");
+}
 
 $userID = $_SESSION['UserID'];
+
+/* ───── جلب اسم المستخدم ───── */
+$stmt = $conn->prepare("SELECT User_Name FROM user WHERE UserID = ?");
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($row = $result->fetch_assoc()) {
+    $_SESSION['User_Name'] = $row['User_Name'];
+} else {
+    $_SESSION['User_Name'] = "User";
+}
 
 /* ───── جلب PilgrimID ───── */
 $pilgrimID = null;
 
-$stmt = $conn->prepare("SELECT PilgrimID FROM pilgrim WHERE UserID = ?");
+$stmt = $conn->prepare("
+    SELECT PilgrimID 
+    FROM pilgrim 
+    WHERE UserID = ?
+    LIMIT 1
+");
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -19,21 +38,47 @@ if ($row = $result->fetch_assoc()) {
     $pilgrimID = $row['PilgrimID'];
 }
 
-/* 👇 DEBUG مهم جداً */
+/* ───── إذا ما عنده ملف حاج ───── */
 if (!$pilgrimID) {
-    die("❌ No PilgrimID found for UserID = " . $userID);
+    die("❌ No pilgrim profile found for this user");
 }
 
-/* ───── الرحلات ───── */
+/* ───── الرحلات المتاحة ───── */
 $trips = [];
 
 $tripsResult = $conn->query("
-    SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate, t.DepartureTime,
-           t.TotalSeats, t.AvailableSeats, t.Status, b.Bus_Number
+    SELECT 
+        t.TripID,
+        t.Origin,
+        t.Destination,
+        t.DepartureDate,
+        t.DepartureTime,
+        t.TotalSeats,
+        t.AvailableSeats,
+        t.Status,
+        b.Bus_Number,
+
+        (t.TotalSeats - t.AvailableSeats) AS BookedSeats,
+
+        CASE 
+            WHEN t.TotalSeats > 0 
+            THEN ROUND(((t.TotalSeats - t.AvailableSeats) / t.TotalSeats) * 100)
+            ELSE 0
+        END AS FillPercent
+
     FROM trip t
     JOIN bus b ON t.BusID = b.BusID
-    WHERE t.Status IN ('Scheduled','Confirmed')
-    ORDER BY t.DepartureDate ASC, t.DepartureTime ASC
+
+    WHERE 
+        t.Status = 'Confirmed'
+        AND t.DepartureDate >= CURDATE()
+        AND t.TotalSeats > 0
+
+    ORDER BY 
+        BookedSeats DESC,
+        t.DepartureDate ASC,
+        t.DepartureTime ASC
+
     LIMIT 3
 ");
 
@@ -41,7 +86,7 @@ while ($row = $tripsResult->fetch_assoc()) {
     $trips[] = $row;
 }
 
-/* ───── الحجوزات ───── */
+/* ───── حجوزات المستخدم ───── */
 $myBookings = [];
 
 $stmt = $conn->prepare("
@@ -51,8 +96,9 @@ $stmt = $conn->prepare("
     JOIN bus b ON t.BusID = b.BusID
     WHERE bk.PilgrimID = ?
       AND bk.BookingStatus = 'Confirmed'
-      AND t.DepartureDate >= CURDATE()
+      AND t.Status = 'Confirmed'
     ORDER BY t.DepartureDate ASC, t.DepartureTime ASC
+    
 ");
 
 $stmt->bind_param("i", $pilgrimID);
@@ -63,7 +109,7 @@ while ($row = $result->fetch_assoc()) {
     $myBookings[] = $row;
 }
 
-/* ───── Functions ───── */
+/* ───── Helpers ───── */
 function fmtDate($d) {
     if (!$d) return '';
     $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -82,7 +128,7 @@ function getTripImage($destination) {
     $map = [
         'Mina' => 'image/Mina.png',
         'Muzdalifah' => 'image/Muzdalifah.png',
-        'Arafat' => 'image/Arafat.png',
+        'Arafat' => 'image/Arafat.jpg',
         'Masjid Al-Haram' => 'image/Makkah.jpg',
     ];
 
