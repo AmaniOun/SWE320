@@ -414,8 +414,8 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 .map-dot-wrapper[data-site="arafat"] .map-badge  { background:#e2574c }
 .map-dot-wrapper[data-site="jamarat"] .map-badge,
 .map-dot-wrapper[data-site="mina"] .map-badge     { background:#eb7d32 }
-.map-dot-wrapper[data-site="muzdalifah"] .map-badge { background:#e0b43a }
-.map-dot-wrapper[data-site="aziziyah"] .map-badge  { background:#59c36a }
+.map-dot-wrapper[data-site="muzdalifah"] .map-badge { background:#eb7d32 }
+.map-dot-wrapper[data-site="aziziyah"] .map-badge  { background:#e2574c  }
 .map-dot-wrapper:hover .map-dot,
 .map-dot-wrapper.is-active .map-dot { transform:scale(1.12); box-shadow:0 0 0 7px rgba(255,255,255,.6),0 12px 22px rgba(0,0,0,.14); filter:brightness(1.03) }
 .map-dot-wrapper:hover .map-badge,
@@ -617,19 +617,23 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 
 .search-filter-grid{
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 120px;
-  gap: 1rem;
+   grid-template-columns: 280px 250px 250px 1fr;
+  gap: 0.7rem;
   align-items: end;
 }
 
 .search-clear-wrap{
   display: flex;
-  align-items: end;
+  gap: 10px;
+  align-items: flex-end;
+  justify-content: flex-start;
 }
 
 .search-clear-btn{
+   width: 120px;
   min-width: 120px;
   height: 44px;
+  flex: 0 0 120px;
 }
 
 .search-results{
@@ -721,7 +725,10 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   color: var(--muted-fg);
   margin-bottom: 1rem;
 }
-
+#tripSearchInput{
+  max-width: 270px;
+  width: 100%;
+}
 .trip-search-actions{
   display: flex;
   justify-content: flex-start;
@@ -733,11 +740,14 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   }
 
   .search-clear-wrap{
-    display: block;
+    display: flex;
+    width: 100%;
+    gap: 10px;
   }
 
   .search-clear-btn{
     width: 100%;
+    min-width: 0;
   }
 
   .trip-search-top{
@@ -787,6 +797,7 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
   font-size:.95rem;
   box-shadow:var(--shadow);
 }
+
 
 /* ══════════════════════════════════════
    USER DASHBOARD
