@@ -1,20 +1,70 @@
 <?php
+session_start();
 include('db_connection.php');
 
-$notifResult = $conn->query("
-    SELECT n.notification_id, n.message, n.sent_at,
-           t.TripID, t.Origin, t.Destination, t.DepartureTime,
-           b.Bus_Number
+/* ───── Login check ───── */
+if (!isset($_SESSION['UserID'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$userID = $_SESSION['UserID'];
+
+/* ───── Get User Name ───── */
+$stmt = $conn->prepare("SELECT User_Name FROM user WHERE UserID = ?");
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$userName = "User";
+if ($row = $result->fetch_assoc()) {
+    $userName = $row['User_Name'];
+}
+
+/* ───── Get PilgrimID ───── */
+$stmt = $conn->prepare("SELECT PilgrimID FROM pilgrim WHERE UserID = ?");
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$pilgrimID = null;
+if ($row = $result->fetch_assoc()) {
+    $pilgrimID = $row['PilgrimID'];
+}
+
+if (!$pilgrimID) {
+    die("❌ No pilgrim profile found");
+}
+
+/* ───── Notifications (ONLY user-related) ───── */
+$notifResult = $conn->prepare("
+    SELECT DISTINCT
+        n.notification_id,
+        n.message,
+        n.sent_at,
+        t.TripID,
+        t.Origin,
+        t.Destination,
+        t.DepartureTime,
+        b.Bus_Number
     FROM notification n
     JOIN trip t ON n.TripID = t.TripID
-    JOIN bus  b ON t.BusID  = b.BusID
+    JOIN bus b ON t.BusID = b.BusID
+    JOIN booking bk ON bk.TripID = t.TripID
+    WHERE bk.PilgrimID = ?
     ORDER BY n.sent_at DESC
 ");
+
+$notifResult->bind_param("i", $pilgrimID);
+$notifResult->execute();
+$result = $notifResult->get_result();
+
 $notifications = [];
-while ($row = $notifResult->fetch_assoc()) {
+while ($row = $result->fetch_assoc()) {
     $notifications[] = $row;
 }
 
+/* ───── Time format ───── */
 function fmtTime($t) {
     if (!$t) return '';
     $parts = explode(':', $t);
@@ -45,9 +95,9 @@ function fmtTime($t) {
       <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
     </nav>
     <div class="nav-right">
-      <span class="role-chip user">&#9679; User</span>
-      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">Khalid</span>
-      <a href="signin.php" class="btn btn-sm btn-outline-dark">Logout</a>
+      <span class="role-chip user">&#9679; pilgrim</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;"><?= htmlspecialchars($userName) ?></span>
+      <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
     <button class="nav-toggle"
             onclick="document.getElementById('nm').classList.toggle('open')"
@@ -60,7 +110,7 @@ function fmtTime($t) {
     <a href="my-bookings.php"     class="nav-link">My Bookings</a>
     <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
     <div class="nav-mobile-footer">
-      <a href="signin.php" class="btn btn-sm btn-outline-dark">Logout</a>
+      <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
   </div>
 </header>

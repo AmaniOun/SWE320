@@ -2,9 +2,9 @@
 session_start();
 include('db_connection.php');
 
-/* ───── التأكد من تسجيل الدخول الحقيقي ───── */
 if (!isset($_SESSION['UserID'])) {
-    die("❌ You must login first");
+    header("Location: login.php");
+    exit();
 }
 
 $userID = $_SESSION['UserID'];
@@ -40,7 +40,8 @@ if ($row = $result->fetch_assoc()) {
 
 /* ───── إذا ما عنده ملف حاج ───── */
 if (!$pilgrimID) {
-    die("❌ No pilgrim profile found for this user");
+    header("Location: login.php");
+    exit();
 }
 
 /* ───── الرحلات المتاحة ───── */
