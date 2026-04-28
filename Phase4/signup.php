@@ -30,12 +30,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bind_param("sss", $email, $hashed, $fullName);
 
         if ($stmt->execute()) {
-            echo "<script>
-                    alert('Account created successfully');
-                    window.location.href='signin.php';
-                  </script>";
-            exit();
-        } else {
+
+    // نجيب الـ UserID الجديد
+    $userID = $stmt->insert_id;
+
+    // نضيفه كـ pilgrim
+    $pstmt = $conn->prepare("INSERT INTO pilgrim (UserID) VALUES (?)");
+    $pstmt->bind_param("i", $userID);
+    $pstmt->execute();
+    $pstmt->close();
+
+    echo "<script>
+            alert('Account created successfully');
+            window.location.href='signin.php';
+          </script>";
+    exit();
+}    else {
             $error = "Something went wrong";
         }
     }
