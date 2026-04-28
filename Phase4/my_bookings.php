@@ -229,7 +229,7 @@ foreach($bookingsDB as &$b) {
 
 <header class="navbar">
   <div class="navbar-inner">
-    <a href="user-dashboard.php" class="nav-logo"><img src="image/saii.png" alt="SAII Logo" style="height:40px;"/></a>
+    <a href="user-dashboard.php" class="nav-logo"><img src="image/saii.png" alt="SAII Logo"/></a>
     <nav class="nav-links">
       <a href="user-dashboard.php" class="nav-link">Dashboard</a>
       <a href="view-trips.php" class="nav-link">View Trips</a>
@@ -238,7 +238,7 @@ foreach($bookingsDB as &$b) {
       <a href="user-heat-map.php" class="nav-link">Heat Map</a>
     </nav>
     <div class="nav-right">
-      <span class="role-chip user">● User</span>
+      <span class="role-chip user">● pilgrim</span>
       <span style="color:white; font-size:0.85rem; margin:0 10px;"><?= htmlspecialchars($_SESSION['User_Name']) ?></span>
       <a href="logout.php" class="btn-logout">Logout</a>
     </div>
