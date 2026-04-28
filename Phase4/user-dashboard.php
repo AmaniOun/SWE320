@@ -47,8 +47,7 @@ $result = $stmt->get_result();
     JOIN trip t ON n.TripID = t.TripID
     JOIN booking bk ON bk.TripID = t.TripID
     WHERE bk.PilgrimID = ?
-      AND bk.BookingStatus = 'Confirmed'
-      AND t.DepartureDate >= CURDATE()
+    AND t.DepartureDate >= CURDATE()
     ");
 
     $stmt->bind_param("i", $pilgrimID);
