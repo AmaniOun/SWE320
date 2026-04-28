@@ -414,8 +414,8 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 .map-dot-wrapper[data-site="arafat"] .map-badge  { background:#e2574c }
 .map-dot-wrapper[data-site="jamarat"] .map-badge,
 .map-dot-wrapper[data-site="mina"] .map-badge     { background:#eb7d32 }
-.map-dot-wrapper[data-site="muzdalifah"] .map-badge { background:#e0b43a }
-.map-dot-wrapper[data-site="aziziyah"] .map-badge  { background:#59c36a }
+.map-dot-wrapper[data-site="muzdalifah"] .map-badge { background:#eb7d32 }
+.map-dot-wrapper[data-site="aziziyah"] .map-badge  { background:#e2574c  }
 .map-dot-wrapper:hover .map-dot,
 .map-dot-wrapper.is-active .map-dot { transform:scale(1.12); box-shadow:0 0 0 7px rgba(255,255,255,.6),0 12px 22px rgba(0,0,0,.14); filter:brightness(1.03) }
 .map-dot-wrapper:hover .map-badge,
