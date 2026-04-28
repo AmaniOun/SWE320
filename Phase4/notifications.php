@@ -53,6 +53,7 @@ $notifResult = $conn->prepare("
     JOIN bus b ON t.BusID = b.BusID
     JOIN booking bk ON bk.TripID = t.TripID
     WHERE bk.PilgrimID = ?
+    AND t.DepartureDate >= CURDATE()
     ORDER BY n.sent_at DESC
 ");
 

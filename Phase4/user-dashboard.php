@@ -29,37 +29,39 @@ $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
 
-if ($row = $result->fetch_assoc()) {
-    $pilgrimID = $row['PilgrimID'];
-}
+    if ($row = $result->fetch_assoc()) {
+        $pilgrimID = $row['PilgrimID'];
+    }
 
-if (!$pilgrimID) {
-    header("Location: login.php");
-    exit();
-}
+    if (!$pilgrimID) {
+        header("Location: login.php");
+        exit();
+    }
 
-/* ───── عدد الإشعارات الخاصة برحلات الحاج ───── */
-$notifCount = 0;
+    /* ───── عدد الإشعارات الخاصة برحلات الحاج ───── */
+    $notifCount = 0;
 
-$stmt = $conn->prepare("
-    SELECT COUNT(DISTINCT n.notification_id) AS cnt
-    FROM notification n
-    JOIN booking bk ON bk.TripID = n.TripID
-    WHERE bk.PilgrimID = ?
-      AND bk.BookingStatus = 'Confirmed'
-");
-$stmt->bind_param("i", $pilgrimID);
-$stmt->execute();
-$result = $stmt->get_result();
-if ($row = $result->fetch_assoc()) {
-    $notifCount = (int)$row['cnt'];
-}
+    $stmt = $conn->prepare("
+        SELECT COUNT(DISTINCT n.notification_id) AS cnt
+        FROM notification n
+        JOIN trip t ON n.TripID = t.TripID
+        JOIN booking bk ON bk.TripID = t.TripID
+        WHERE bk.PilgrimID = ?
+          AND bk.BookingStatus = 'Confirmed'
+          AND t.DepartureDate >= CURDATE()
+    ");
+    $stmt->bind_param("i", $pilgrimID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $notifCount = (int)$row['cnt'];
+    }
 
-/* ───── الرحلات المتاحة ───── */
-$trips = [];
+    /* ───── الرحلات المتاحة ───── */
+    $trips = [];
 
-$tripsResult = $conn->query("
-    SELECT 
+    $tripsResult = $conn->query("
+        SELECT 
         t.TripID,
         t.Origin,
         t.Destination,
