@@ -6,23 +6,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action  = $_POST['action']  ?? '';
     $tripId  = (int)($_POST['TripID'] ?? 0);
 
-    /* =========================
-       CANCEL TRIP
-    ========================= */
+      /* =========================
+        CANCEL TRIP
+      ========================= */
     if ($action === 'cancel' && $tripId) {
 
-        $stmt = mysqli_prepare($conn, "UPDATE trip SET Status='Cancelled' WHERE TripID=?");
-        mysqli_stmt_bind_param($stmt, 'i', $tripId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+      // 1) إلغاء الرحلة
+      $stmt = mysqli_prepare($conn, "UPDATE trip SET Status='Cancelled' WHERE TripID=?");
+      mysqli_stmt_bind_param($stmt, 'i', $tripId);
+      mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
 
-        $msg = "The trip has been cancelled";
-        $stmt = mysqli_prepare($conn, "INSERT INTO notification (message, TripID) VALUES (?, ?)");
-        mysqli_stmt_bind_param($stmt, 'si', $msg, $tripId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+      // 2) إلغاء كل الحجوزات المرتبطة
+      $stmt = mysqli_prepare($conn, "UPDATE booking SET BookingStatus='Cancelled' WHERE TripID=?");
+      mysqli_stmt_bind_param($stmt, 'i', $tripId);
+      mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
 
-        $_SESSION['toast'] = ['msg' => "Trip #$tripId cancelled", 'type' => 'info'];
+      // 3) (اختياري 🔥 مهم) تحديث QR Codes إلى Expired
+      $stmt = mysqli_prepare($conn, "
+          UPDATE qrcode q
+          JOIN booking b ON q.BookingID = b.BookingID
+          SET q.QR_Status = 'Expired'
+          WHERE b.TripID = ?
+      ");
+      mysqli_stmt_bind_param($stmt, 'i', $tripId);
+      mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
+
+      // 4) إشعار
+      $msg = "The trip has been cancelled";
+      $stmt = mysqli_prepare($conn, "INSERT INTO notification (message, TripID) VALUES (?, ?)");
+      mysqli_stmt_bind_param($stmt, 'si', $msg, $tripId);
+      mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
+
+      $_SESSION['toast'] = ['msg' => "Trip #$tripId cancelled", 'type' => 'info'];
     }
 
     /* =========================
