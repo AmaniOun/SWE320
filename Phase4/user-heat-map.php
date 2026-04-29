@@ -124,7 +124,7 @@ function siteKey($name) {
         foreach ($sites as $s):
             $key = siteKey($s['name']);
             $style = $positions[$s['name']] ?? "left:50%;top:50%;";
-            $displayName = ($s['name'] == "Masjid Al-Haram") ? "Makkah" : $s['name'];
+            $displayName = ($s['name'] == "Masjid Al-Haram") ? "Masjid Al-Haram" : $s['name'];
         ?>
           <div class="map-dot-wrapper"
                data-site="<?= $key ?>"
@@ -156,7 +156,7 @@ function siteKey($name) {
         <div class="heat-sidebar" id="heat-sidebar">
           <?php foreach ($sites as $s):
               $key = siteKey($s['name']);
-              $displayName = ($s['name'] == "Masjid Al-Haram") ? "Makkah" : $s['name'];
+              $displayName = ($s['name'] == "Masjid Al-Haram") ? "Masjid Al-Haram" : $s['name'];
           ?>
             <div class="heat-row" id="row-<?= $key ?>">
               <div class="heat-row-top">

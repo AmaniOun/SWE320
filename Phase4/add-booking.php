@@ -1,15 +1,17 @@
 <?php
 session_start();
 
-include('db_connection.php');
-
-/* ───── Login check ───── */
 if (!isset($_SESSION['UserID'])) {
-    header("Location: signin.php");
-    exit();
+    header('Location: signin.php');
+    exit;
 }
 
-$userID = $_SESSION['UserID'];
+require 'db_connection.php';
+
+$userID = (int)($_SESSION['UserID'] ?? 0);
+$userName = $_SESSION['User_Name'] ?? 'User';
+$userEmail = $_SESSION['email'] ?? '';
+$pilgrimID = (int)($_SESSION['pilgrim_id'] ?? 0);
 
 if (!$pilgrimID && $userID) {
     $stmt = mysqli_prepare($conn, 'SELECT PilgrimID FROM pilgrim WHERE UserID = ? LIMIT 1');
@@ -58,12 +60,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$pilgrimID) {
         $errorMsg = 'Unable to find your pilgrim account.';
-    } elseif ($fullName === '') {
-        $errorMsg = 'Please enter your full name.';
-    } elseif ($email === '') {
-        $errorMsg = 'Please enter your email.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errorMsg = 'Please enter a valid email.';
     } elseif (!$tripID) {
         $errorMsg = 'Please select a trip.';
     } else {
@@ -183,7 +179,7 @@ mysqli_close($conn);
         <a href="user-heat-map.php" class="nav-link">Heat Map</a>
       </nav>
       <div class="nav-right">
-        <span class="role-chip user">&#9679; User</span>
+        <span class="role-chip user">&#9679; pilgrim</span>
         <span style="color:rgba(255,255,255,.65);font-size:.85rem;"><?= e($userName) ?></span>
         <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
       </div>
@@ -216,21 +212,10 @@ mysqli_close($conn);
       <div class="card" style="padding:1.5rem; margin-bottom:1rem;">
         <div class="form-card-title" style="margin-bottom:1.25rem;">
           <i class="fa-regular fa-calendar-plus" style="color:var(--accent);"></i>
-          Booking Details
-        </div>
-
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" for="fullName">Full Name</label>
-          <input class="form-input" type="text" id="fullName" name="full_name" value="<?= e($fullName) ?>" placeholder="Enter your full name">
-        </div>
-
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" for="email">Email</label>
-          <input class="form-input" type="email" id="email" name="email" value="<?= e($email) ?>" placeholder="Enter your email">
+          Select Trip
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="tripSelect">Select Trip</label>
           <select class="form-select" id="tripSelect" name="trip_id">
             <option value="">Choose a trip...</option>
             <?php foreach ($trips as $tripKey => $trip): ?>
@@ -254,7 +239,7 @@ mysqli_close($conn);
             <div class="trip-search-content">
               <div class="trip-search-top">
                 <div class="trip-search-title-wrap">
-                  <div class="trip-search-title">Bus <?= e($trip['bus']) ?></div>
+                  <div class="trip-search-title"> <?= e($trip['bus']) ?></div>
                   <div class="trip-search-id">#<?= e($trip['id']) ?></div>
                 </div>
                 <span class="search-status-badge">active</span>
@@ -388,24 +373,10 @@ mysqli_close($conn);
 
   bookingForm.addEventListener("submit", function (e) {
     const val = tripSelect.value;
-    const fullName = document.getElementById("fullName").value.trim();
-    const email = document.getElementById("email").value.trim();
-
+    
     if (!val) {
       e.preventDefault();
       showAlert("Please select a trip.");
-      return;
-    }
-
-    if (!fullName) {
-      e.preventDefault();
-      alert("Please enter your full name.");
-      return;
-    }
-
-    if (!email) {
-      e.preventDefault();
-      alert("Please enter your email.");
       return;
     }
 

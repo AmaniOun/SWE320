@@ -2,6 +2,35 @@
 session_start();
 require_once 'db_connection.php';
 
+/* =========================
+   AUTO-STATUS ENGINE
+   النقطة 1: كل الكراسي محجوزة → Completed
+   النقطة 2: تاريخ الرحلة عدا → Completed
+========================= */
+// النقطة 2: رحلات تاريخها عدا → Completed
+mysqli_query($conn,
+    "UPDATE trip
+     SET Status = 'Completed'
+     WHERE Status = 'Confirmed'
+       AND (
+         DepartureDate < CURDATE()
+         OR (DepartureDate = CURDATE() AND DepartureTime < CURTIME())
+       )"
+);
+
+
+
+// النقطة 1 عكس: لو صار في مقاعد متاحة (بعد كنسل حجز) وتاريخها لسا ما عدا → ترجع Confirmed
+mysqli_query($conn,
+    "UPDATE trip
+     SET Status = 'Confirmed'
+     WHERE Status = 'Completed'
+       AND (
+         DepartureDate > CURDATE()
+         OR (DepartureDate = CURDATE() AND DepartureTime > CURTIME())
+       )"
+);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action  = $_POST['action']  ?? '';
     $tripId  = (int)($_POST['TripID'] ?? 0);
@@ -49,127 +78,231 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ========================= */
     if ($action === 'delete' && $tripId) {
 
-        // 1) حذف QR Codes المرتبطة بحجوزات هذي الرحلة
-        $stmt = mysqli_prepare($conn, "
-            DELETE q FROM qrcode q
-            JOIN booking b ON q.BookingID = b.BookingID
-            WHERE b.TripID = ?
-        ");
-        mysqli_stmt_bind_param($stmt, 'i', $tripId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+        // نتحقق من حالة الرحلة أولاً
+        $chkStmt = mysqli_prepare($conn, "SELECT Status FROM trip WHERE TripID=? LIMIT 1");
+        mysqli_stmt_bind_param($chkStmt, 'i', $tripId);
+        mysqli_stmt_execute($chkStmt);
+        $chkRes = mysqli_stmt_get_result($chkStmt);
+        $chkRow = mysqli_fetch_assoc($chkRes);
+        mysqli_stmt_close($chkStmt);
+        $tripStatus = $chkRow['Status'] ?? '';
 
-        // 2) حذف الحجوزات المرتبطة بالرحلة
-        $stmt = mysqli_prepare($conn, "DELETE FROM booking WHERE TripID = ?");
-        mysqli_stmt_bind_param($stmt, 'i', $tripId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-
-        // 3) حذف الإشعارات المرتبطة
-        $stmt = mysqli_prepare($conn, "DELETE FROM notification WHERE TripID = ?");
-        mysqli_stmt_bind_param($stmt, 'i', $tripId);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-
-        // 4) حذف الرحلة نفسها
-        $stmt = mysqli_prepare($conn, "DELETE FROM trip WHERE TripID = ?");
-        mysqli_stmt_bind_param($stmt, 'i', $tripId);
-        if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['toast'] = ['msg' => "Trip #$tripId deleted successfully", 'type' => 'error'];
+        // النقطة 3: لو الرحلة Confirmed نمنع الحذف ونطلب كانسل أول
+        if ($tripStatus === 'Confirmed') {
+            $_SESSION['toast'] = ['msg' => "⚠️ Trip #$tripId must be cancelled before deleting.", 'type' => 'warn'];
         } else {
-            $_SESSION['toast'] = ['msg' => "Error deleting trip: " . mysqli_error($conn), 'type' => 'error'];
-        }
-        mysqli_stmt_close($stmt);
-    }
-
-    /* =========================
-       EDIT TRIP + NOTIFICATION
-    ========================= */
-    if ($action === 'edit' && $tripId) {
-
-        $origin      = trim($_POST['Origin'] ?? '');
-        $destination = trim($_POST['Destination'] ?? '');
-        $date        = trim($_POST['DepartureDate'] ?? '');
-        $time        = trim($_POST['DepartureTime'] ?? '');
-        $seats       = (int)($_POST['TotalSeats'] ?? 0);
-        $busNum      = trim($_POST['Bus_Number'] ?? '');
-
-        // نجيب البيانات القديمة كاملة
-        $oldRes = mysqli_query($conn, "SELECT DepartureDate, DepartureTime, BusID, Origin, Destination FROM trip WHERE TripID=$tripId");
-        $oldRow = mysqli_fetch_assoc($oldRes);
-        $oldTime   = $oldRow['DepartureTime']  ?? null;
-        $oldDate   = $oldRow['DepartureDate']  ?? null;
-        $oldBusId  = $oldRow['BusID']          ?? null;
-
-        // نجيب BusID الجديد
-        $stmt = mysqli_prepare($conn, "SELECT BusID FROM bus WHERE Bus_Number=? LIMIT 1");
-        mysqli_stmt_bind_param($stmt, 's', $busNum);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $busRow = mysqli_fetch_assoc($result);
-        mysqli_stmt_close($stmt);
-
-        $busId = $busRow['BusID'] ?? null;
-
-        if ($busId) {
-
-            // نحسب عدد الحجوزات الـ Confirmed الحالية للرحلة
-            $bStmt = mysqli_prepare($conn,
-                "SELECT COUNT(*) AS booked FROM booking WHERE TripID=? AND BookingStatus='Confirmed'");
-            mysqli_stmt_bind_param($bStmt, 'i', $tripId);
-            mysqli_stmt_execute($bStmt);
-            $bRes = mysqli_stmt_get_result($bStmt);
-            $bRow = mysqli_fetch_assoc($bRes);
-            mysqli_stmt_close($bStmt);
-            $bookedCount = (int)($bRow['booked'] ?? 0);
-
-            // AvailableSeats = TotalSeats الجديد - عدد الحجوزات الموجودة
-            // لو TotalSeats أقل من الحجوزات نحطها صفر (ما تطلع سالبة)
-            $newAvailable = max(0, $seats - $bookedCount);
-
-            // تحديث الرحلة مع AvailableSeats الصحيح
-            $stmt = mysqli_prepare($conn,
-                "UPDATE trip SET Origin=?, Destination=?, DepartureDate=?, DepartureTime=?, TotalSeats=?, AvailableSeats=?, BusID=? WHERE TripID=?");
-            mysqli_stmt_bind_param($stmt, 'sssssiis',
-                $origin, $destination, $date, $time, $seats, $newAvailable, $busId, $tripId);
+            // 1) حذف QR Codes المرتبطة بحجوزات هذي الرحلة
+            $stmt = mysqli_prepare($conn, "
+                DELETE q FROM qrcode q
+                JOIN booking b ON q.BookingID = b.BookingID
+                WHERE b.TripID = ?
+            ");
+            mysqli_stmt_bind_param($stmt, 'i', $tripId);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
 
-            // 🔔 كل تغيير = إشعار منفصل في قاعدة البيانات
-            $changes = [];
+            // 2) حذف الحجوزات المرتبطة بالرحلة
+            $stmt = mysqli_prepare($conn, "DELETE FROM booking WHERE TripID = ?");
+            mysqli_stmt_bind_param($stmt, 'i', $tripId);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
 
-            if ($oldDate && $oldDate !== $date) {
-                $changes[] = "Date changed from $oldDate to $date";
-            }
+            // 3) حذف الإشعارات المرتبطة
+            $stmt = mysqli_prepare($conn, "DELETE FROM notification WHERE TripID = ?");
+            mysqli_stmt_bind_param($stmt, 'i', $tripId);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
 
-            if ($oldTime && substr($oldTime, 0, 5) !== $time) {
-                $oldH = (int)explode(':', $oldTime)[0];
-                $newH = (int)explode(':', $time)[0];
-                $label = $newH > $oldH ? "Delay" : "Schedule Change";
-                $changes[] = "$label: departure time changed from " . substr($oldTime, 0, 5) . " to $time";
+            // 4) حذف الرحلة نفسها
+            $stmt = mysqli_prepare($conn, "DELETE FROM trip WHERE TripID = ?");
+            mysqli_stmt_bind_param($stmt, 'i', $tripId);
+            if (mysqli_stmt_execute($stmt)) {
+                $_SESSION['toast'] = ['msg' => "Trip #$tripId deleted successfully", 'type' => 'error'];
+            } else {
+                $_SESSION['toast'] = ['msg' => "Error deleting trip: " . mysqli_error($conn), 'type' => 'error'];
             }
-
-            if ($oldBusId && $oldBusId != $busId) {
-                $changes[] = "Bus changed to $busNum";
-            }
-
-            if ($oldRow['Origin'] !== $origin || $oldRow['Destination'] !== $destination) {
-                $changes[] = "Route changed from {$oldRow['Origin']} → {$oldRow['Destination']} to $origin → $destination";
-            }
-
-            if (!empty($changes)) {
-                // ✅ كل التغييرات في رسالة واحدة مفصولة بـ " | "
-                $msg = implode(" | ", $changes);
-                $stmt = mysqli_prepare($conn, "INSERT INTO notification (message, TripID) VALUES (?, ?)");
-                mysqli_stmt_bind_param($stmt, 'si', $msg, $tripId);
-                mysqli_stmt_execute($stmt);
-                mysqli_stmt_close($stmt);
-            }
-            // لو ما في تغييرات ما يُرسل إشعار
+            mysqli_stmt_close($stmt);
         }
-
-        $_SESSION['toast'] = ['msg' => "Trip #$tripId updated", 'type' => 'success'];
     }
+
+   /* =========================
+   EDIT TRIP
+========================= */
+if ($action === 'edit' && $tripId) {
+
+    $origin      = trim($_POST['Origin'] ?? '');
+    $destination = trim($_POST['Destination'] ?? '');
+    $date        = trim($_POST['DepartureDate'] ?? '');
+    $time        = trim($_POST['DepartureTime'] ?? '');
+    $newSeats    = (int)($_POST['TotalSeats'] ?? 0);
+    $busNum      = trim($_POST['Bus_Number'] ?? '');
+
+    // جلب بيانات الرحلة الحالية
+    $tripStmt = mysqli_prepare($conn, "
+        SELECT TotalSeats, AvailableSeats, BusID,
+               DepartureDate, DepartureTime,
+               Origin, Destination
+        FROM trip
+        WHERE TripID=?
+    ");
+
+    mysqli_stmt_bind_param($tripStmt, 'i', $tripId);
+    mysqli_stmt_execute($tripStmt);
+
+    $tripResult = mysqli_stmt_get_result($tripStmt);
+    $oldRow = mysqli_fetch_assoc($tripResult);
+
+    mysqli_stmt_close($tripStmt);
+
+    $oldTotalSeats     = (int)$oldRow['TotalSeats'];
+    $oldAvailableSeats = (int)$oldRow['AvailableSeats'];
+
+    // المقاعد المحجوزة فعلياً
+    $bookedSeats = $oldTotalSeats - $oldAvailableSeats;
+
+    // جلب بيانات الباص
+    $busStmt = mysqli_prepare($conn,
+        "SELECT BusID, Capacity FROM bus WHERE Bus_Number=? LIMIT 1"
+    );
+    
+    
+
+    mysqli_stmt_bind_param($busStmt, 's', $busNum);
+    mysqli_stmt_execute($busStmt);
+
+    $busResult = mysqli_stmt_get_result($busStmt);
+    $busRow = mysqli_fetch_assoc($busResult);
+
+    mysqli_stmt_close($busStmt);
+
+    $busId = $busRow['BusID'] ?? null;
+    $busCapacity = (int)($busRow['Capacity'] ?? 0);
+
+    // التحقق من الباص
+    if (!$busId) {
+
+        $_SESSION['toast'] = [
+            'msg'  => 'Invalid bus selected',
+            'type' => 'error'
+        ];
+
+        header('Location: manage-trips.php');
+        exit();
+    }
+
+    // ممنوع المقاعد تتجاوز سعة الباص
+    if ($newSeats > $busCapacity) {
+
+        $_SESSION['toast'] = [
+            'msg'  => "Seats cannot exceed bus capacity ($busCapacity)",
+            'type' => 'error'
+        ];
+
+        header('Location: manage-trips.php');
+        exit();
+    }
+
+    // ممنوع تقل عن المحجوز فعلياً
+    if ($newSeats < $bookedSeats) {
+
+        $_SESSION['toast'] = [
+            'msg'  => "Cannot reduce seats below booked seats ($bookedSeats)",
+            'type' => 'error'
+        ];
+
+        header('Location: manage-trips.php');
+        exit();
+    }
+
+    // حساب المقاعد المتاحة الجديدة
+    $newAvailableSeats = $newSeats - $bookedSeats;
+
+    // تحديث الرحلة
+    $updateStmt = mysqli_prepare($conn, "
+        UPDATE trip
+        SET Origin=?,
+            Destination=?,
+            DepartureDate=?,
+            DepartureTime=?,
+            TotalSeats=?,
+            AvailableSeats=?,
+            BusID=?
+        WHERE TripID=?
+    ");
+
+    mysqli_stmt_bind_param(
+        $updateStmt,
+        'ssssiiii',
+        $origin,
+        $destination,
+        $date,
+        $time,
+        $newSeats,
+        $newAvailableSeats,
+        $busId,
+        $tripId
+    );
+
+    mysqli_stmt_execute($updateStmt);
+    mysqli_stmt_close($updateStmt);
+
+    /* =========================
+       NOTIFICATIONS
+    ========================= */
+
+    $changes = [];
+
+    if ($oldRow['DepartureDate'] !== $date) {
+        $changes[] = "Date changed from {$oldRow['DepartureDate']} to $date";
+    }
+
+    if (substr($oldRow['DepartureTime'], 0, 5) !== $time) {
+
+        $oldH = (int)explode(':', $oldRow['DepartureTime'])[0];
+        $newH = (int)explode(':', $time)[0];
+
+        $label = ($newH > $oldH)
+            ? 'Delay'
+            : 'Schedule Change';
+
+        $changes[] = "$label: departure time changed from " .
+                     substr($oldRow['DepartureTime'], 0, 5) .
+                     " to $time";
+    }
+
+    if ($oldRow['Origin'] !== $origin ||
+        $oldRow['Destination'] !== $destination) {
+
+        $changes[] = "Route changed from {$oldRow['Origin']} → {$oldRow['Destination']} to $origin → $destination";
+    }
+
+    if ($oldRow['BusID'] != $busId) {
+        $changes[] = "Bus changed to $busNum";
+    }
+
+    if ($oldTotalSeats != $newSeats) {
+        $changes[] = "Seats updated from $oldTotalSeats to $newSeats";
+    }
+
+    if (!empty($changes)) {
+
+        $msg = implode(' | ', $changes);
+
+        $stmt = mysqli_prepare($conn,
+            "INSERT INTO notification (message, TripID)
+             VALUES (?, ?)"
+        );
+
+        mysqli_stmt_bind_param($stmt, 'si', $msg, $tripId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
+
+    $_SESSION['toast'] = [
+        'msg'  => "Trip #$tripId updated successfully",
+        'type' => 'success'
+    ];
+}
 
     header("Location: manage-trips.php");
     exit();
@@ -204,7 +337,7 @@ while ($row = mysqli_fetch_assoc($res)) {
 
 // جلب الباصات
 $buses = [];
-$busRes = mysqli_query($conn, "SELECT BusID, Bus_Number FROM bus ORDER BY Bus_Number ASC");
+$busRes = mysqli_query($conn, "SELECT BusID, Bus_Number, Capacity FROM bus WHERE Status='Active' ORDER BY Bus_Number");
 while ($busRow = mysqli_fetch_assoc($busRes)) {
     $buses[] = $busRow;
 }
@@ -317,7 +450,7 @@ unset($_SESSION['toast']);
             </div>
             <div>
               <span class="trip-bus-name"><?= htmlspecialchars($t['Bus_Number']) ?></span>
-              <span class="trip-id-tag"> #<?= $t['TripID'] ?></span>
+              <span class="trip-id-tag"> #TRP-<?= $t['TripID'] ?></span>
             </div>
           </div>
           <span class="badge badge-<?= $statusClass ?>"><?= htmlspecialchars($t['Status']) ?></span>
@@ -365,6 +498,7 @@ unset($_SESSION['toast']);
         <?php endif; ?>
 
         <div class="trip-actions">
+          <?php if ($t['Status'] !== 'Cancelled' && $t['Status'] !== 'Completed'): ?>
           <button class="btn btn-sm btn-outline"
             onclick="openEdit(
               <?= $t['TripID'] ?>,
@@ -375,19 +509,16 @@ unset($_SESSION['toast']);
               <?= $t['TotalSeats'] ?>,
               '<?= htmlspecialchars(addslashes($t['Bus_Number'])) ?>'
             )">✏ Edit</button>
+          <?php endif; ?>
 
           <?php if ($t['Status'] === 'Confirmed'): ?>
-          <form method="POST" style="display:inline;">
-            <input type="hidden" name="action"  value="cancel"/>
-            <input type="hidden" name="TripID"  value="<?= $t['TripID'] ?>"/>
-            <button type="submit" class="btn btn-sm btn-ghost"
-              onclick="return confirm('Cancel this trip?')">○ Cancel</button>
-          </form>
+          <button class="btn btn-sm btn-ghost"
+            onclick="openCancelConfirm(<?= $t['TripID'] ?>)">○ Cancel</button>
           <?php endif; ?>
 
           <button class="btn btn-sm btn-outline"
             style="color:var(--destructive);border-color:var(--destructive);"
-            onclick="openDelete(<?= $t['TripID'] ?>)">🗑 Delete</button>
+            onclick="openDelete(<?= $t['TripID'] ?>, '<?= $t['Status'] ?>')">🗑 Delete</button>
         </div>
       </div>
       <?php endforeach; ?>
@@ -410,7 +541,7 @@ unset($_SESSION['toast']);
           <label>From</label>
           <div class="select-wrap">
             <select class="form-select" name="Origin" id="edit-from">
-              <?php $locs=['Masjid Al-Haram','Mina','Arafat','Muzdalifah','Makkah Hotel Zone','Madinah','Aziziyah','Jamarat'];
+              <?php $locs=['Masjid Al-Haram','Mina','Arafat','Muzdalifah','Aziziyah','Jamarat'];
               foreach ($locs as $l): ?><option><?= $l ?></option><?php endforeach; ?>
             </select>
           </div>
@@ -450,6 +581,47 @@ unset($_SESSION['toast']);
       </div>
       <button type="submit" class="btn btn-accent btn-full" style="margin-top:1.1rem;">Save Changes</button>
     </form>
+  </div>
+</div>
+
+<!-- ── CANCEL CONFIRM MODAL ── -->
+<div class="modals-overlay" id="cancel-confirm-modal">
+  <div class="modals confirm-modal">
+    <div class="confirm-icon-wrap" style="color:var(--warning,#f59e0b);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <h3>Cancel This Trip?</h3>
+    <p>This will cancel the trip and all related bookings. This action cannot be undone.</p>
+    <form method="POST" action="manage-trips.php" id="cancel-confirm-form">
+      <input type="hidden" name="action" value="cancel"/>
+      <input type="hidden" name="TripID" id="cancel-confirm-trip-id"/>
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-outline btn-full" onclick="closeModal('cancel-confirm-modal')">Go Back</button>
+        <button type="submit" class="btn btn-destructive btn-full">Yes, Cancel Trip</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MUST CANCEL FIRST MODAL ── -->
+<div class="modals-overlay" id="must-cancel-modal">
+  <div class="modals confirm-modal">
+    <div class="confirm-icon-wrap" style="color:var(--warning,#f59e0b);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <h3>Cannot Delete Yet</h3>
+    <p>This trip is still <strong>Confirmed</strong>. You must cancel it first before deleting.</p>
+    <div class="confirm-actions" style="justify-content:center;">
+      <button type="button" class="btn btn-accent btn-full" onclick="closeModal('must-cancel-modal')">OK</button>
+    </div>
   </div>
 </div>
 
@@ -502,7 +674,15 @@ unset($_SESSION['toast']);
     document.getElementById('edit-bus').value     = bus;
     openModal('edit-modal');
   }
-  function openDelete(id) {
+  function openCancelConfirm(id) {
+    document.getElementById('cancel-confirm-trip-id').value = id;
+    openModal('cancel-confirm-modal');
+  }
+  function openDelete(id, status) {
+    if (status === 'Confirmed') {
+      openModal('must-cancel-modal');
+      return;
+    }
     document.getElementById('delete-trip-id').value = id;
     openModal('delete-modal');
   }

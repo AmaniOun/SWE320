@@ -20,21 +20,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                      $errors['Destination'] = 'Drop-off cannot be same as pickup';
     if (!$date)                      $errors['DepartureDate'] = 'Please select a date';
     if (!$time)                      $errors['DepartureTime'] = 'Please select a departure time';
-    if ($totalSeats < 1 || $totalSeats > 200)
-                                     $errors['TotalSeats']  = 'Seats must be between 1 and 200';
-    if (!$busNum)                    $errors['Bus_Number']  = 'Please select a bus';
+    // التحقق من عدد المقاعد
+if ($totalSeats < 1) {
+    $errors['TotalSeats'] = 'Seats must be at least 1';
+}
+   $busId = null;
+$busCapacity = 0;
 
-    $busId = null;
-    if (!isset($errors['Bus_Number'])) {
-        $escaped = mysqli_real_escape_string($conn, $busNum);
-        $bRes = mysqli_query($conn, "SELECT BusID FROM bus WHERE Bus_Number='$escaped' LIMIT 1");
-        $bRow = mysqli_fetch_assoc($bRes);
-        if ($bRow) {
-            $busId = $bRow['BusID'];
-        } else {
-            $errors['Bus_Number'] = 'Bus not found in database';
+if (!isset($errors['Bus_Number'])) {
+
+    $escaped = mysqli_real_escape_string($conn, $busNum);
+
+    $bRes = mysqli_query($conn,
+        "SELECT BusID, Capacity
+         FROM bus
+         WHERE Bus_Number='$escaped'
+         LIMIT 1"
+    );
+
+    $bRow = mysqli_fetch_assoc($bRes);
+
+    if ($bRow) {
+
+        $busId = $bRow['BusID'];
+        $busCapacity = (int)$bRow['Capacity'];
+
+        // ممنوع المقاعد تتجاوز سعة الباص
+        if ($totalSeats > $busCapacity) {
+
+            $errors['TotalSeats'] =
+                "Seats cannot exceed bus capacity ($busCapacity)";
         }
+
+    } else {
+
+        $errors['Bus_Number'] = 'Bus not found in database';
     }
+}
 
     // نجيب AdminID من قاعدة البيانات بناءً على UserID المخزن في الـ session
     $adminId = null;
@@ -61,10 +83,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               Status, Pickup_Location, BusID, AdminID)
              VALUES (?, ?, ?, ?, ?, ?, 'Confirmed', ?, ?, ?)");
 
-        mysqli_stmt_bind_param($stmt, 'ssssiiisi',
-            $origin, $destination, $date, $time,
-            $totalSeats, $totalSeats,   
-            $pickup, $busId, $adminId);
+       mysqli_stmt_bind_param($stmt, 'ssssiisii',
+    $origin,
+    $destination,
+    $date,
+    $time,
+    $totalSeats,
+    $totalSeats,
+    $pickup,
+    $busId,
+    $adminId
+);
 
         if (mysqli_stmt_execute($stmt)) {
             $newId = mysqli_insert_id($conn);
@@ -86,8 +115,7 @@ while ($bRow = mysqli_fetch_assoc($bRes)) {
 }
 
 $locations = [
-    'Masjid Al-Haram', 'Mina', 'Arafat', 'Muzdalifah',
-    'Makkah Hotel Zone', 'Madinah', 'Aziziyah', 'Jamarat'
+    'Masjid Al-Haram', 'Mina', 'Arafat', 'Muzdalifah', 'Aziziyah', 'Jamarat'
 ];
 ?>
 <!DOCTYPE html>
@@ -269,6 +297,46 @@ $locations = [
 </footer>
 
 <div class="toast" id="toast"></div>
+<script>
+const busSelect = document.getElementById('Bus_Number');
+const seatsInput = document.getElementById('TotalSeats');
+
+// capacities من PHP
+const busCapacities = {
+<?php foreach ($buses as $b): ?>
+    "<?= addslashes($b['Bus_Number']) ?>": <?= (int)$b['Capacity'] ?>,
+<?php endforeach; ?>
+};
+
+function updateSeatsFromBus() {
+
+    const selectedBus = busSelect.value;
+
+    if (!selectedBus || !busCapacities[selectedBus]) {
+        return;
+    }
+
+    const capacity = parseInt(busCapacities[selectedBus]);
+
+    // يحط القيمة الافتراضية
+    seatsInput.value = capacity;
+
+    // يمنع الزيادة فوق السعة
+    seatsInput.max = capacity;
+}
+
+busSelect.addEventListener('change', updateSeatsFromBus);
+
+// منع الكتابة فوق السعة
+seatsInput.addEventListener('input', function () {
+
+    const max = parseInt(this.max || 0);
+
+    if (parseInt(this.value) > max) {
+        this.value = max;
+    }
+});
+</script>
 </body>
 </html>
 <?php mysqli_close($conn); ?>

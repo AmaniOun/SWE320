@@ -46,6 +46,7 @@ SELECT
 FROM trip
 JOIN bus ON trip.BusID = bus.BusID
 WHERE trip.Status = 'Confirmed'
+  AND trip.AvailableSeats > 0
 ";
 
 if (!empty($search)) {
@@ -228,7 +229,7 @@ if (!$result) {
             <div class="trip-search-top">
               <div class="trip-search-title-wrap">
                 <div class="trip-search-title">
-                  <?php echo htmlspecialchars($row['Bus_Number']); ?>
+                   <?php echo htmlspecialchars($row['Bus_Number']); ?>
                 </div>
 
                 <div class="trip-search-id">

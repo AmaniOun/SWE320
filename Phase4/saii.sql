@@ -96,7 +96,7 @@ INSERT INTO `bus` (`BusID`, `Bus_Number`, `Capacity`, `Status`, `Driver_Name`, `
 (1, 'BUS-001', 30, 'Active', 'Faisal Al-Harbi', '0501111111'),
 (2, 'BUS-002', 50, 'Active', 'Nasser Al-Dossari', '0502222222'),
 (3, 'BUS-003', 45, 'Active', 'Saad Al-Mutairi', '0503333333'),
-(4, 'BUS-004', 20, 'Maintenance', 'Turki Al-Anazi', '0504444444'),
+(4, 'BUS-001', 30, 'Maintenance', 'Turki Al-Anazi', '0501111111'),
 (5, 'BUS-005', 50, 'Active', 'Bandar Al-Rashidi', '0505555555');
 
 -- --------------------------------------------------------
@@ -120,8 +120,8 @@ INSERT INTO `heatmap` (`HeatmapID`, `location`, `crowdDensity`) VALUES
 (2, 'Arafat', '88.00'),
 (3, 'Mina', '99.00'),
 (4, 'Jamarat', '75.30'),
-(5, 'Muzdalifah', '70.10'),
-(6, 'Aziziyah', '97.80');
+(5, 'Muzdalifah', '60.10'),
+(6, 'Aziziyah', '30.80');
 
 -- --------------------------------------------------------
 
@@ -144,9 +144,9 @@ INSERT INTO `notification` (`notification_id`, `message`, `sent_at`, `TripID`) V
 (1, 'Bus changed to BUS-001', '2025-05-01 10:05:00', 1),
 (2, 'Schedule Change: departure time changed from 05:00 to 06:00', '2025-05-07 20:00:00', 2),
 (3, 'The trip has been cancelled.', '2026-04-26 16:00:00', 5),
-(4, 'The trip has been cancelled.', '2026-04-28 12:00:00', 7),
-(5, 'Bus changed to BUS-003', '2026-05-01 19:40:50', 3),
-(6, 'Delay: departure time changed from 13:00 to 14:00', '2026-05-02 10:45:00', 8);
+(4, 'The trip has been cancelled.', '2026-04-27 12:00:00', 7),
+(5, 'Bus changed to BUS-003', '2026-04-28 19:40:50', 3),
+(6, 'Delay: departure time changed from 13:00 to 14:00', '2026-04-28 10:45:00', 8);
 
 
 -- --------------------------------------------------------
