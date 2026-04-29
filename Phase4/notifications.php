@@ -54,6 +54,7 @@ $notifResult = $conn->prepare("
     JOIN booking bk ON bk.TripID = t.TripID
     WHERE bk.PilgrimID = ?
     AND t.DepartureDate >= CURDATE()
+    AND n.sent_at > CAST(bk.BookingDate AS DATETIME)
     ORDER BY n.sent_at DESC
 ");
 

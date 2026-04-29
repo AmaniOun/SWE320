@@ -41,14 +41,15 @@ $result = $stmt->get_result();
     /* ───── عدد الإشعارات الخاصة برحلات الحاج ───── */
     $notifCount = 0;
 
-    $stmt = $conn->prepare("
+   $stmt = $conn->prepare("
     SELECT COUNT(DISTINCT n.notification_id) AS cnt
     FROM notification n
     JOIN trip t ON n.TripID = t.TripID
     JOIN booking bk ON bk.TripID = t.TripID
     WHERE bk.PilgrimID = ?
     AND t.DepartureDate >= CURDATE()
-    ");
+    AND n.sent_at > CAST(bk.BookingDate AS DATETIME)
+");
 
     $stmt->bind_param("i", $pilgrimID);
     $stmt->execute();
