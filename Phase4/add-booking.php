@@ -1,15 +1,36 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'user') {
-    header('Location: signin.php'); exit;
+// ── Auth check (unified session key) ──────────────────────────
+if (!isset($_SESSION['UserID'])) {
+    header('Location: signin.php');
+    exit;
 }
 
-require 'db.php';
+include('db_connection.php');
 
-$pilgrimID = $_SESSION['pilgrim_id'];
-$userName  = $_SESSION['user_name'];
-$userEmail = $_SESSION['email'];
+$userID = $_SESSION['UserID'];
+
+// ── Get user info ──────────────────────────────────────────────
+$stmt = $conn->prepare("SELECT User_Name, Email FROM user WHERE UserID = ?");
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$userRow = $stmt->get_result()->fetch_assoc();
+$userName  = $userRow['User_Name'] ?? 'User';
+$userEmail = $userRow['Email']     ?? '';
+
+// ── Get PilgrimID ──────────────────────────────────────────────
+$stmt = $conn->prepare("SELECT PilgrimID FROM pilgrim WHERE UserID = ? LIMIT 1");
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$pilgrimRow = $stmt->get_result()->fetch_assoc();
+
+if (!$pilgrimRow) {
+    header('Location: login.php');
+    exit;
+}
+
+$pilgrimID = $pilgrimRow['PilgrimID'];
 
 $successData = null;
 $errorMsg    = '';
@@ -21,99 +42,160 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$tripID) {
         $errorMsg = 'Please select a trip.';
     } else {
-        // Get trip & lock check
-        $result = mysqli_query($conn,
-            "SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate,
-                    t.DepartureTime, t.AvailableSeats, t.TotalSeats, b.Bus_Number
-             FROM trip t
-             JOIN bus b ON b.BusID = t.BusID
-             WHERE t.TripID = $tripID AND t.Status = 'Confirmed'
-             LIMIT 1"
-        );
-        $trip = mysqli_fetch_assoc($result);
+        // ── 1. Check for duplicate booking ────────────────────
+        $dup = $conn->prepare("
+            SELECT BookingID FROM booking
+            WHERE PilgrimID = ? AND TripID = ? AND BookingStatus = 'Confirmed'
+            LIMIT 1
+        ");
+        $dup->bind_param("ii", $pilgrimID, $tripID);
+        $dup->execute();
 
-        if (!$trip) {
-            $errorMsg = 'Trip not found or not available.';
-        } elseif ($trip['AvailableSeats'] <= 0) {
-            $errorMsg = 'No available seats for this trip.';
+        if ($dup->get_result()->num_rows > 0) {
+            $errorMsg = 'You already have a confirmed booking for this trip.';
         } else {
-            $seatNumber = $trip['TotalSeats'] - $trip['AvailableSeats'] + 1;
+            // ── 2. Fetch trip using prepared statement ─────────
+            $stmt = $conn->prepare("
+                SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate,
+                       t.DepartureTime, t.AvailableSeats, t.TotalSeats, b.Bus_Number
+                FROM trip t
+                JOIN bus b ON b.BusID = t.BusID
+                WHERE t.TripID = ? AND t.Status = 'Confirmed'
+                LIMIT 1
+            ");
+            $stmt->bind_param("i", $tripID);
+            $stmt->execute();
+            $trip = $stmt->get_result()->fetch_assoc();
 
-            // Insert booking
-            mysqli_query($conn,
-                "INSERT INTO booking (BookingDate, SeatNumber, BookingStatus, PilgrimID, TripID)
-                 VALUES (CURDATE(), $seatNumber, 'Confirmed', $pilgrimID, $tripID)"
-            );
-            $bookingID = mysqli_insert_id($conn);
+            if (!$trip) {
+                $errorMsg = 'Trip not found or not available.';
+            } elseif ($trip['AvailableSeats'] <= 0) {
+                $errorMsg = 'No available seats for this trip.';
+            } else {
+                $seatNumber = $trip['TotalSeats'] - $trip['AvailableSeats'] + 1;
 
-            // Decrease available seats
-            mysqli_query($conn,
-                "UPDATE trip SET AvailableSeats = AvailableSeats - 1 WHERE TripID = $tripID"
-            );
+                // ── 3. Insert booking (prepared) ───────────────
+                $ins = $conn->prepare("
+                    INSERT INTO booking (BookingDate, SeatNumber, BookingStatus, PilgrimID, TripID)
+                    VALUES (CURDATE(), ?, 'Confirmed', ?, ?)
+                ");
+                $ins->bind_param("iii", $seatNumber, $pilgrimID, $tripID);
+                $ins->execute();
+                $bookingID = $conn->insert_id;
 
-            // Generate QR
-            $qrValue = 'QR-SAII-BK' . str_pad($bookingID, 3, '0', STR_PAD_LEFT);
-            $expiry  = date('Y-m-d H:i:s', strtotime($trip['DepartureDate'] . ' ' . $trip['DepartureTime'] . ' +3 hours'));
-            $qrValue_s = mysqli_real_escape_string($conn, $qrValue);
-            mysqli_query($conn,
-                "INSERT INTO qrcode (BookingID, QR_Value, ExpiryTime, QR_Status)
-                 VALUES ($bookingID, '$qrValue_s', '$expiry', 'Active')"
-            );
+                // ── 4. Decrease available seats (prepared) ─────
+                $upd = $conn->prepare("
+                    UPDATE trip SET AvailableSeats = AvailableSeats - 1 WHERE TripID = ?
+                ");
+                $upd->bind_param("i", $tripID);
+                $upd->execute();
 
-            $successData = [
-                'booking_id' => $bookingID,
-                'qr_value'   => $qrValue,
-                'from'       => $trip['Origin'],
-                'to'         => $trip['Destination'],
-                'date'       => date('M d, Y', strtotime($trip['DepartureDate'])),
-                'time'       => date('h:i A',  strtotime($trip['DepartureTime'])),
-                'bus'        => $trip['Bus_Number'],
-            ];
+                // ── 5. Generate QR (prepared) ──────────────────
+                $qrValue = 'QR-SAII-BK' . str_pad($bookingID, 3, '0', STR_PAD_LEFT);
+                $expiry  = date('Y-m-d H:i:s', strtotime(
+                    $trip['DepartureDate'] . ' ' . $trip['DepartureTime'] . ' +3 hours'
+                ));
+
+                $qr = $conn->prepare("
+                    INSERT INTO qrcode (BookingID, QR_Value, ExpiryTime, QR_Status)
+                    VALUES (?, ?, ?, 'Active')
+                ");
+                $qr->bind_param("iss", $bookingID, $qrValue, $expiry);
+                $qr->execute();
+
+                $successData = [
+                    'booking_id' => $bookingID,
+                    'qr_value'   => $qrValue,
+                    'from'       => $trip['Origin'],
+                    'to'         => $trip['Destination'],
+                    'date'       => date('M d, Y', strtotime($trip['DepartureDate'])),
+                    'time'       => substr($trip['DepartureTime'], 0, 5), // 24-hour HH:MM
+                    'bus'        => $trip['Bus_Number'],
+                ];
+            }
         }
     }
 }
 
-// ── Load available trips ───────────────────────────────────────
-$tripsResult = mysqli_query($conn,
-    "SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate,
-            t.DepartureTime, t.AvailableSeats, t.TotalSeats, b.Bus_Number
-     FROM trip t
-     JOIN bus b ON b.BusID = t.BusID
-     WHERE t.Status = 'Confirmed' AND t.AvailableSeats > 0
-     ORDER BY t.DepartureDate, t.DepartureTime"
-);
+// ── Load available trips (prepared) ───────────────────────────
+$stmt = $conn->prepare("
+    SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate,
+           t.DepartureTime, t.AvailableSeats, t.TotalSeats, b.Bus_Number
+    FROM trip t
+    JOIN bus b ON b.BusID = t.BusID
+    WHERE t.Status = 'Confirmed'
+      AND t.AvailableSeats > 0
+      AND t.DepartureDate >= CURDATE()
+    ORDER BY t.DepartureDate, t.DepartureTime
+");
+$stmt->execute();
+$tripsResult = $stmt->get_result();
+
 $trips = [];
-while ($row = mysqli_fetch_assoc($tripsResult)) {
+while ($row = $tripsResult->fetch_assoc()) {
     $trips[] = $row;
 }
-mysqli_close($conn);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Book a Trip - SAII</title>
+  <title>Book a Trip — SAII Hajj Transport</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
   <link rel="stylesheet" href="styles.css"/>
   <style>
-    :root { --primary:#1f3566;--accent:#e2a94b;--success:#2e7d32;--danger:#d92d20;--warning:#f3a000;--bg:#f7f8fc; }
+    :root {
+      --primary:#1f3566;
+      --accent:#e2a94b;
+      --success:#2e7d32;
+      --danger:#d92d20;
+      --warning:#f3a000;
+      --bg:#f7f8fc;
+    }
     .container { width:92%; max-width:700px; margin:30px auto; }
     h2 { font-size:22px; font-weight:700; color:#1f2937; margin-bottom:4px; }
     .subtitle { font-size:13px; color:#667085; margin-bottom:24px; }
-    .form-card { background:#fff; border:1px solid #eceef3; border-radius:12px; padding:24px; margin-bottom:16px; }
-    .form-card-title { font-size:14px; font-weight:700; color:#1f3566; display:flex; align-items:center; gap:8px; margin-bottom:20px; }
+
+    .form-card {
+      background:#fff;
+      border:1px solid #eceef3;
+      border-radius:12px;
+      padding:24px;
+      margin-bottom:16px;
+    }
+    .form-card-title {
+      font-size:14px; font-weight:700; color:#1f3566;
+      display:flex; align-items:center; gap:8px; margin-bottom:20px;
+    }
     .form-card-title i { color:var(--accent); }
+
     .form-group { margin-bottom:16px; }
     .form-group label { display:block; font-size:13px; font-weight:600; color:#344054; margin-bottom:6px; }
-    .form-group input, .form-group select { width:100%; padding:10px 12px; border:1px solid #d0d5dd; border-radius:8px; font-size:14px; color:#1f2937; background:#fff; outline:none; transition:0.2s; font-family:inherit; appearance:none; }
-    .form-group input:focus, .form-group select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(226,169,75,0.15); }
+    .form-group input,
+    .form-group select {
+      width:100%; padding:10px 12px;
+      border:1px solid #d0d5dd; border-radius:8px;
+      font-size:14px; color:#1f2937; background:#fff;
+      outline:none; transition:0.2s;
+      font-family:inherit; appearance:none;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(226,169,75,0.15);
+    }
     .form-group input[readonly] { background:#f9fafb; color:#667085; cursor:not-allowed; }
-    .trip-preview-card { background:#fff; border:1px solid #eceef3; border-radius:12px; padding:24px; margin-bottom:16px; border-left:5px solid var(--accent); display:none; }
+
+    /* Trip preview */
+    .trip-preview-card {
+      background:#fff; border:1px solid #eceef3;
+      border-radius:12px; padding:24px; margin-bottom:16px;
+      border-left:5px solid var(--accent); display:none;
+    }
     .trip-preview-card.visible { display:block; }
     .trip-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
     .trip-bus-name { font-size:15px; font-weight:700; color:#1f3566; display:flex; align-items:center; gap:6px; }
-    .trip-id-tag { font-size:12px; color:#667085; font-weight:400; }
     .badge-active { background:#e8f5e9; color:var(--success); font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
     .trip-route-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
     .trip-loc { display:flex; align-items:center; gap:5px; font-size:14px; font-weight:600; color:#1f3566; }
@@ -125,17 +207,35 @@ mysqli_close($conn);
     .seats-tag { font-size:12px; font-weight:600; padding:2px 10px; border-radius:20px; }
     .seats-tag.good { background:#e8f5e9; color:var(--success); }
     .seats-tag.low  { background:#fff3e0; color:var(--warning); }
-    .seats-tag.crit { background:#ffebee; color:var(--danger); }
-    .btn-confirm { width:100%; padding:13px; background:var(--accent); color:#1f2937; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:0.2s; font-family:inherit; }
+    .seats-tag.crit { background:#ffebee; color:var(--danger);  }
+
+    /* Confirm button */
+    .btn-confirm {
+      width:100%; padding:13px;
+      background:var(--accent); color:#1f2937;
+      border:none; border-radius:8px;
+      font-size:15px; font-weight:700; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:0.2s; font-family:inherit;
+    }
     .btn-confirm:hover:not(:disabled) { background:#f4b860; }
     .btn-confirm:disabled { opacity:0.55; cursor:not-allowed; }
+
+    /* Alerts */
     .alert { padding:10px 14px; border-radius:8px; font-size:13px; font-weight:500; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
-    .alert-error   { background:#ffebee; color:var(--danger); border:1px solid #f5c2c7; }
+    .alert-error   { background:#ffebee; color:var(--danger);  border:1px solid #f5c2c7; }
     .alert-warning { background:#fff3e0; color:var(--warning); border:1px solid #ffd180; }
+
+    /* Modal */
     .modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999; }
     .modal.active { display:flex !important; }
     .modal-box { background:#fff; padding:25px; border-radius:16px; width:380px; text-align:center; }
-    .btn-primary-modal { background:var(--primary); color:white; padding:12px; border:none; border-radius:8px; width:100%; font-weight:bold; cursor:pointer; margin-top:15px; font-family:inherit; }
+    .btn-primary-modal {
+      background:var(--primary); color:#fff;
+      padding:12px; border:none; border-radius:8px;
+      width:100%; font-weight:bold; cursor:pointer;
+      margin-top:15px; font-family:inherit;
+    }
   </style>
 </head>
 <body class="page-wrapper">
@@ -146,25 +246,27 @@ mysqli_close($conn);
       <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
     </a>
     <nav class="nav-links">
-      <a href="user-dashboard.php"  class="nav-link">Dashboard</a>
-      <a href="view-trips.php"      class="nav-link">View Trips</a>
-      <a href="add-booking.php"     class="nav-link active">Book a Trip</a>
-      <a href="my-bookings.php"     class="nav-link">My Bookings</a>
-      <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
+      <a href="user-dashboard.php" class="nav-link">Dashboard</a>
+      <a href="view-trips.php"     class="nav-link">View Trips</a>
+      <a href="add-booking.php"    class="nav-link active">Book a Trip</a>
+      <a href="my_bookings.php"    class="nav-link">My Bookings</a>
+      <a href="user-heat-map.php"  class="nav-link">Heat Map</a>
     </nav>
     <div class="nav-right">
-      <span class="role-chip user">&#9679; User</span>
+      <span class="role-chip user">&#9679; pilgrim</span>
       <span style="color:rgba(255,255,255,.65);font-size:.85rem;"><?= htmlspecialchars($userName) ?></span>
       <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
-    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+    <button class="nav-toggle"
+            onclick="document.getElementById('nm').classList.toggle('open')"
+            aria-label="Menu">&#9776;</button>
   </div>
   <div class="nav-mobile" id="nm">
-    <a href="user-dashboard.php"  class="nav-link">Dashboard</a>
-    <a href="view-trips.php"      class="nav-link">View Trips</a>
-    <a href="add-booking.php"     class="nav-link active">Book a Trip</a>
-    <a href="my-bookings.php"     class="nav-link">My Bookings</a>
-    <a href="user-heat-map.php"   class="nav-link">Heat Map</a>
+    <a href="user-dashboard.php" class="nav-link">Dashboard</a>
+    <a href="view-trips.php"     class="nav-link">View Trips</a>
+    <a href="add-booking.php"    class="nav-link active">Book a Trip</a>
+    <a href="my_bookings.php"    class="nav-link">My Bookings</a>
+    <a href="user-heat-map.php"  class="nav-link">Heat Map</a>
     <div class="nav-mobile-footer">
       <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
@@ -176,11 +278,17 @@ mysqli_close($conn);
   <p class="subtitle">Reserve a seat on an available trip</p>
 
   <?php if ($errorMsg): ?>
-    <div class="alert alert-error"><i class="fa-solid fa-circle-xmark"></i><?= htmlspecialchars($errorMsg) ?></div>
+    <div class="alert alert-error">
+      <i class="fa-solid fa-circle-xmark"></i>
+      <?= htmlspecialchars($errorMsg) ?>
+    </div>
   <?php endif; ?>
 
   <?php if (empty($trips)): ?>
-    <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i>No available trips at the moment.</div>
+    <div class="alert alert-warning">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      No available trips at the moment.
+    </div>
   <?php endif; ?>
 
   <form method="POST" action="add-booking.php" id="bookingForm">
@@ -193,14 +301,12 @@ mysqli_close($conn);
 
       <div class="form-group">
         <label>Full Name</label>
-        <input type="text" id="fullName" name="full_name" readonly
-               value="<?= htmlspecialchars($userName) ?>"/>
+        <input type="text" readonly value="<?= htmlspecialchars($userName) ?>"/>
       </div>
 
       <div class="form-group">
         <label>Email</label>
-        <input type="email" id="email" name="email" readonly
-               value="<?= htmlspecialchars($userEmail) ?>"/>
+        <input type="email" readonly value="<?= htmlspecialchars($userEmail) ?>"/>
       </div>
 
       <div class="form-group">
@@ -208,18 +314,18 @@ mysqli_close($conn);
         <select id="tripSelect" name="trip_id" onchange="onTripChange()">
           <option value="">Choose a trip...</option>
           <?php foreach ($trips as $t): ?>
-            <option value="<?= $t['TripID'] ?>"
+            <option value="<?= (int)$t['TripID'] ?>"
                     data-bus="<?= htmlspecialchars($t['Bus_Number']) ?>"
                     data-from="<?= htmlspecialchars($t['Origin']) ?>"
                     data-to="<?= htmlspecialchars($t['Destination']) ?>"
                     data-date="<?= date('M d, Y', strtotime($t['DepartureDate'])) ?>"
-                    data-time="<?= date('h:i A',  strtotime($t['DepartureTime'])) ?>"
-                    data-seats="<?= $t['AvailableSeats'] ?>"
-                    data-total="<?= $t['TotalSeats'] ?>">
+                    data-time="<?= substr($t['DepartureTime'], 0, 5) ?>"
+                    data-seats="<?= (int)$t['AvailableSeats'] ?>"
+                    data-total="<?= (int)$t['TotalSeats'] ?>">
               <?= htmlspecialchars($t['Origin']) ?> → <?= htmlspecialchars($t['Destination']) ?>
               | <?= date('Y-m-d', strtotime($t['DepartureDate'])) ?>
-              <?= date('h:i A',  strtotime($t['DepartureTime'])) ?>
-              (<?= $t['AvailableSeats'] ?> seats)
+              <?= substr($t['DepartureTime'], 0, 5) ?>
+              (<?= (int)$t['AvailableSeats'] ?> seats)
             </option>
           <?php endforeach; ?>
         </select>
@@ -244,7 +350,7 @@ mysqli_close($conn);
         <span><i class="fa-regular fa-calendar"></i><span id="pvDate"></span></span>
         <span><i class="fa-regular fa-clock"></i><span id="pvTime"></span></span>
         <span id="pvSeatsBadge" class="seats-tag good">
-          <i class="fa-solid fa-users"></i> <span id="pvSeats"></span>
+          <i class="fa-solid fa-users"></i>&nbsp;<span id="pvSeats"></span>
         </span>
       </div>
     </div>
@@ -264,7 +370,8 @@ mysqli_close($conn);
     <h3 style="margin-top:15px;">Booking Confirmed!</h3>
     <?php if ($successData): ?>
       <p style="font-size:14px;color:#666;margin-top:10px;">
-        Seat reserved for <?= htmlspecialchars($successData['date']) ?> at <?= htmlspecialchars($successData['time']) ?>
+        Seat reserved for <?= htmlspecialchars($successData['date']) ?>
+        at <?= htmlspecialchars($successData['time']) ?>
       </p>
       <div style="margin:20px 0;border:2px dashed #ddd;padding:20px;display:inline-block;border-radius:8px;">
         <i class="fa-solid fa-qrcode" style="font-size:100px;color:#1f3566;"></i>
@@ -275,10 +382,11 @@ mysqli_close($conn);
         </p>
       </div>
     <?php endif; ?>
-    <button class="btn-primary-modal" onclick="window.location.href='my-bookings.php'">
+    <button class="btn-primary-modal" onclick="window.location.href='my_bookings.php'">
       <i class="fa-regular fa-bookmark"></i> View My Bookings
     </button>
-    <button class="btn-primary-modal" style="background:#f2f4f7;color:#344054;margin-top:8px;"
+    <button class="btn-primary-modal"
+            style="background:#f2f4f7;color:#344054;margin-top:8px;"
             onclick="document.getElementById('successModal').classList.remove('active')">
       Book Another
     </button>
@@ -290,39 +398,43 @@ mysqli_close($conn);
 </footer>
 
 <script>
-  function onTripChange() {
-    const sel     = document.getElementById('tripSelect');
-    const opt     = sel.options[sel.selectedIndex];
-    const preview = document.getElementById('tripPreview');
-    const btn     = document.getElementById('confirmBtn');
+function onTripChange() {
+  const sel     = document.getElementById('tripSelect');
+  const opt     = sel.options[sel.selectedIndex];
+  const preview = document.getElementById('tripPreview');
+  const btn     = document.getElementById('confirmBtn');
 
-    if (!sel.value) { preview.classList.remove('visible'); btn.disabled = true; return; }
-
-    const seats = parseInt(opt.dataset.seats);
-    const total = parseInt(opt.dataset.total);
-
-    document.getElementById('pvBus').textContent   = opt.dataset.bus;
-    document.getElementById('pvFrom').textContent  = opt.dataset.from;
-    document.getElementById('pvTo').textContent    = opt.dataset.to;
-    document.getElementById('pvDate').textContent  = opt.dataset.date;
-    document.getElementById('pvTime').textContent  = opt.dataset.time;
-    document.getElementById('pvSeats').textContent = seats + '/' + total + ' seats';
-
-    const badge = document.getElementById('pvSeatsBadge');
-    badge.className = 'seats-tag';
-    if (seats <= 5)       badge.classList.add('crit');
-    else if (seats <= 15) badge.classList.add('low');
-    else                  badge.classList.add('good');
-
-    preview.classList.add('visible');
-    btn.disabled = (seats === 0);
+  if (!sel.value) {
+    preview.classList.remove('visible');
+    btn.disabled = true;
+    return;
   }
 
-  document.getElementById('bookingForm').addEventListener('submit', function () {
-    const btn = document.getElementById('confirmBtn');
-    btn.disabled = true;
-    document.getElementById('btnText').textContent = 'Booking...';
-  });
+  const seats = parseInt(opt.dataset.seats);
+  const total = parseInt(opt.dataset.total);
+
+  document.getElementById('pvBus').textContent   = opt.dataset.bus;
+  document.getElementById('pvFrom').textContent  = opt.dataset.from;
+  document.getElementById('pvTo').textContent    = opt.dataset.to;
+  document.getElementById('pvDate').textContent  = opt.dataset.date;
+  document.getElementById('pvTime').textContent  = opt.dataset.time;
+  document.getElementById('pvSeats').textContent = seats + ' / ' + total + ' seats';
+
+  const badge = document.getElementById('pvSeatsBadge');
+  badge.className = 'seats-tag';
+  if      (seats <= 5)  badge.classList.add('crit');
+  else if (seats <= 15) badge.classList.add('low');
+  else                  badge.classList.add('good');
+
+  preview.classList.add('visible');
+  btn.disabled = (seats === 0);
+}
+
+document.getElementById('bookingForm').addEventListener('submit', function () {
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  document.getElementById('btnText').textContent = 'Booking...';
+});
 </script>
 </body>
 </html>
