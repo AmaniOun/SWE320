@@ -84,6 +84,7 @@ $result = $stmt->get_result();
         t.Status = 'Confirmed'
         AND t.DepartureDate >= CURDATE()
         AND t.TotalSeats > 0
+        AND t.AvailableSeats > 0
     ORDER BY 
         BookedSeats DESC,
         t.DepartureDate ASC,
@@ -149,7 +150,6 @@ function getTripImage($destination) {
 function getSeatBadge($total, $available) {
     $booked = $total - $available;
     $pct = $total > 0 ? round(($booked / $total) * 100) : 0;
-    if ($available <= 0) return ['class' => 'full',      'text' => 'Full'];
     if ($pct >= 75)      return ['class' => 'soon',      'text' => 'Filling Fast'];
     return                      ['class' => 'available', 'text' => $available . ' seats left'];
 }
