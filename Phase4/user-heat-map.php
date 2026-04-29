@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 include "db_connection.php";
 
 if (!isset($_SESSION['UserID'])) {
-    header("Location: login.php");
+    header("Location: signin.php");
     exit();
 }
 
@@ -73,7 +73,7 @@ function siteKey($name) {
       <a href="user-dashboard.php" class="nav-link">Dashboard</a>
       <a href="view-trips.php" class="nav-link">View Trips</a>
       <a href="add-booking.php" class="nav-link">Book a Trip</a>
-      <a href="my-bookings.php" class="nav-link">My Bookings</a>
+      <a href="my_bookings.php" class="nav-link">My Bookings</a>
       <a href="user-heat-map.php" class="nav-link active">Heat Map</a>
     </nav>
 
