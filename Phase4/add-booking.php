@@ -26,7 +26,7 @@ $stmt->execute();
 $pilgrimRow = $stmt->get_result()->fetch_assoc();
 
 if (!$pilgrimRow) {
-    header('Location: login.php');
+    header('Location: signin.php');
     exit;
 }
 
