@@ -1,33 +1,23 @@
 ﻿<?php
 session_start();
 
+include('db_connection.php');
+
+/* ───── Login check ───── */
 if (!isset($_SESSION['UserID'])) {
-    header('Location: signin.php');
-    exit;
+    header("Location: signin.php");
+    exit();
 }
 
-require 'db_connection.php';
+$userID = $_SESSION['UserID'];
 
-$userID = (int)$_SESSION['UserID'];
-$userName = $_SESSION['User_Name'] ?? 'User';
-$userEmail = $_SESSION['Email'] ?? '';
-$pilgrimID = (int)($_SESSION['pilgrim_id'] ?? 0);
-
-if ($userEmail === '' || !$pilgrimID) {
-    $stmt = mysqli_prepare($conn,
-        'SELECT u.Email, p.PilgrimID
-         FROM user u
-         LEFT JOIN pilgrim p ON p.UserID = u.UserID
-         WHERE u.UserID = ?
-         LIMIT 1'
-    );
+if (!$pilgrimID && $userID) {
+    $stmt = mysqli_prepare($conn, 'SELECT PilgrimID FROM pilgrim WHERE UserID = ? LIMIT 1');
     mysqli_stmt_bind_param($stmt, 'i', $userID);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     if ($row = mysqli_fetch_assoc($result)) {
-        $userEmail = $row['Email'] ?? $userEmail;
-        $pilgrimID = (int)($row['PilgrimID'] ?? 0);
-        $_SESSION['Email'] = $userEmail;
+        $pilgrimID = (int)$row['PilgrimID'];
         $_SESSION['pilgrim_id'] = $pilgrimID;
     }
     mysqli_stmt_close($stmt);
@@ -189,7 +179,7 @@ mysqli_close($conn);
         <a href="user-dashboard.php" class="nav-link">Dashboard</a>
         <a href="view-trips.php" class="nav-link">View Trips</a>
         <a href="add-booking.php" class="nav-link active">Book a Trip</a>
-        <a href="my-bookings.php" class="nav-link">My Bookings</a>
+        <a href="my_bookings.php" class="nav-link">My Bookings</a>
         <a href="user-heat-map.php" class="nav-link">Heat Map</a>
       </nav>
       <div class="nav-right">
@@ -204,7 +194,7 @@ mysqli_close($conn);
       <a href="user-dashboard.php" class="nav-link">Dashboard</a>
       <a href="view-trips.php" class="nav-link">View Trips</a>
       <a href="add-booking.php" class="nav-link active">Book a Trip</a>
-      <a href="my-bookings.php" class="nav-link">My Bookings</a>
+      <a href="my_bookings.php" class="nav-link">My Bookings</a>
       <a href="user-heat-map.php" class="nav-link">Heat Map</a>
       <div class="nav-mobile-footer">
         <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
