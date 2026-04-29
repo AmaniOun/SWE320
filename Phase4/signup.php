@@ -31,21 +31,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt->execute()) {
 
-    // نجيب الـ UserID الجديد
     $userID = $stmt->insert_id;
 
-    // نضيفه كـ pilgrim
     $pstmt = $conn->prepare("INSERT INTO pilgrim (UserID) VALUES (?)");
     $pstmt->bind_param("i", $userID);
     $pstmt->execute();
     $pstmt->close();
 
+    // ✅ هذا أهم شيء
+    $_SESSION['UserID'] = $userID;
+    $_SESSION['User_Name'] = $fullName;
+    $_SESSION['Email'] = $email;
+
     echo "<script>
             alert('Account created successfully');
-            window.location.href='signin.php';
+            window.location.href='user-dashboard.php';
           </script>";
     exit();
-}    else {
+        } else {
             $error = "Something went wrong";
         }
     }
@@ -64,7 +67,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="auth-page">
 
-<!-- ── Header ── -->
 <header style="position:sticky;top:0;z-index:200;background:#F0ECE6;border-bottom:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.1)">
   <div style="max-width:1152px;margin:0 auto;padding:0 1.5rem;height:64px;display:flex;align-items:center;justify-content:space-between">
       <a href="index.php" class="nav-logo">
@@ -73,7 +75,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </div>
 </header>
 
-<!-- ── Card ── -->
 <div class="auth-body">
   <div class="auth-card wide">
 
@@ -92,7 +93,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <form method="POST" onsubmit="return validateSignup()">
 
-      <!-- First + Last Name -->
       <div class="name-row">
         <div class="form-group">
           <label class="form-label">First Name:</label>
@@ -105,19 +105,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
       </div>
 
-      <!-- Email -->
       <div class="form-group">
         <label class="form-label">Email Address:</label>
         <input class="form-input" type="email" name="email" id="su-email" placeholder="example@email.com" required>
       </div>
 
-      <!-- Password -->
       <div class="form-group">
         <label class="form-label">Password:</label>
         <input class="form-input" type="password" name="password" id="su-pass" placeholder="Min. 8 characters"
                oninput="checkStrength()" required>
 
-        <!-- Strength bar -->
         <div class="pw-strength-wrap" id="pw-strength">
           <div class="pw-bar"></div><div class="pw-bar"></div>
           <div class="pw-bar"></div><div class="pw-bar"></div>
@@ -125,7 +122,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
       </div>
 
-      <!-- Confirm -->
       <div class="form-group">
         <label class="form-label">Confirm Password:</label>
         <input class="form-input" type="password" id="su-confirm" placeholder="Re-enter password" required>
@@ -156,7 +152,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <script>
 var isStrong = false;
 
-// 🔥 قوة كلمة السر
 function checkStrength() {
   var pw = document.getElementById('su-pass').value;
   var wrap = document.getElementById('pw-strength');
@@ -185,7 +180,6 @@ function checkStrength() {
   isStrong = (score >= 3);
 }
 
-// 🔥 تحقق قبل الإرسال
 function validateSignup() {
 
   var pass = document.getElementById('su-pass').value;
