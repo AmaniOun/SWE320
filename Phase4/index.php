@@ -39,7 +39,7 @@ session_start();
       Book buses, track congestion, and board with QR codes — all in one place.
     </p>
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-      <a href="signin.php" class="btn btn-accent btn-lg"><b>Get Started →</b></a>
+      <a href="signup.php" class="btn btn-accent btn-lg"><b>Get Started →</b></a>
     </div>
   </div>
 </section>
