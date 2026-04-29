@@ -8,12 +8,22 @@ if (!isset($_SESSION['UserID'])) {
     exit();
 }
 
-$userID = $_SESSION['UserID'];
-$userName = $_SESSION['User_Name'] ?? 'User';
+//if u are using xmamp
 $host = "localhost";
+$port = "8889";
 $dbname = "saii";
 $dbuser = "root";
-$dbpass = "root"; 
+$dbpass = "root";
+
+//if u are usig xampp
+
+
+//$host = "localhost";
+//$port = "3306";
+///$dbname = "saii";
+///$dbuser = "root";
+//$dbpass = "";
+
 
 try {
     
