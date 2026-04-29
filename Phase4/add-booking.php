@@ -1,42 +1,38 @@
-﻿<?php
+<?php
 session_start();
 
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+include "db_connection.php";
+
 if (!isset($_SESSION['UserID'])) {
-    header('Location: signin.php');
-    exit;
+    header("Location: signin.php");
+    exit();
 }
 
-require 'db_connection.php';
-
-$userID = (int)$_SESSION['UserID'];
-$userName = $_SESSION['User_Name'] ?? 'User';
+$userID = (int)($_SESSION['UserID'] ?? 0);
 $userEmail = $_SESSION['Email'] ?? '';
 $pilgrimID = (int)($_SESSION['pilgrim_id'] ?? 0);
 
-if ($userEmail === '' || !$pilgrimID) {
-    $stmt = mysqli_prepare($conn,
-        'SELECT u.Email, p.PilgrimID
-         FROM user u
-         LEFT JOIN pilgrim p ON p.UserID = u.UserID
-         WHERE u.UserID = ?
-         LIMIT 1'
-    );
-    mysqli_stmt_bind_param($stmt, 'i', $userID);
+if (!$pilgrimID && $userID) {
+    $stmt = mysqli_prepare($conn, "SELECT PilgrimID FROM pilgrim WHERE UserID = ? LIMIT 1");
+    mysqli_stmt_bind_param($stmt, "i", $userID);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
+
     if ($row = mysqli_fetch_assoc($result)) {
-        $userEmail = $row['Email'] ?? $userEmail;
-        $pilgrimID = (int)($row['PilgrimID'] ?? 0);
-        $_SESSION['Email'] = $userEmail;
+        $pilgrimID = (int)$row['PilgrimID'];
         $_SESSION['pilgrim_id'] = $pilgrimID;
     }
+
     mysqli_stmt_close($stmt);
 }
 
 $errorMsg = '';
 $successData = null;
 $selectedTripKey = '';
-$fullName = $userName;
+$fullName = '';
 $email = $userEmail;
 
 function e($value) {
@@ -54,9 +50,6 @@ function formatTripRow($row) {
         'time' => date('h:i A', strtotime($row['DepartureTime'])),
         'seats' => $row['AvailableSeats'] . '/' . $row['TotalSeats'] . ' seats',
         'pickup' => $row['Pickup_Location'] ?? '',
-        'duration' => '',
-        'busType' => '',
-        'note' => '',
     ];
 }
 
@@ -89,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  LIMIT 1
                  FOR UPDATE"
             );
+
             mysqli_stmt_bind_param($stmt, 'i', $tripID);
             mysqli_stmt_execute($stmt);
             $result = mysqli_stmt_get_result($stmt);
@@ -109,21 +103,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "INSERT INTO booking (BookingDate, SeatNumber, BookingStatus, PilgrimID, TripID)
                  VALUES (CURDATE(), ?, 'Confirmed', ?, ?)"
             );
+
             mysqli_stmt_bind_param($stmt, 'iii', $seatNumber, $pilgrimID, $tripID);
+
             if (!mysqli_stmt_execute($stmt)) {
                 throw new Exception('Could not create booking.');
             }
+
             mysqli_stmt_close($stmt);
 
             $bookingID = mysqli_insert_id($conn);
 
             $stmt = mysqli_prepare($conn,
-                'UPDATE trip SET AvailableSeats = AvailableSeats - 1 WHERE TripID = ? AND AvailableSeats > 0'
+                "UPDATE trip
+                 SET AvailableSeats = AvailableSeats - 1
+                 WHERE TripID = ? AND AvailableSeats > 0"
             );
+
             mysqli_stmt_bind_param($stmt, 'i', $tripID);
+
             if (!mysqli_stmt_execute($stmt) || mysqli_stmt_affected_rows($stmt) !== 1) {
                 throw new Exception('Could not reserve a seat for this trip.');
             }
+
             mysqli_stmt_close($stmt);
 
             $qrValue = 'QR-SAII-BK' . str_pad($bookingID, 3, '0', STR_PAD_LEFT);
@@ -133,10 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 "INSERT INTO qrcode (BookingID, QR_Value, ExpiryTime, QR_Status)
                  VALUES (?, ?, ?, 'Active')"
             );
+
             mysqli_stmt_bind_param($stmt, 'iss', $bookingID, $qrValue, $expiry);
+
             if (!mysqli_stmt_execute($stmt)) {
                 throw new Exception('Could not generate QR code.');
             }
+
             mysqli_stmt_close($stmt);
 
             mysqli_commit($conn);
@@ -144,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $successData = formatTripRow($trip);
             $successData['booking_id'] = $bookingID;
             $successData['qr_value'] = $qrValue;
+
         } catch (Exception $ex) {
             mysqli_rollback($conn);
             $errorMsg = $ex->getMessage();
@@ -152,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $trips = [];
+
 $stmt = mysqli_prepare($conn,
     "SELECT t.TripID, t.Origin, t.Destination, t.DepartureDate, t.DepartureTime,
             t.TotalSeats, t.AvailableSeats, t.Status, t.Pickup_Location, b.Bus_Number
@@ -160,14 +167,18 @@ $stmt = mysqli_prepare($conn,
      WHERE t.Status = 'Confirmed' AND t.AvailableSeats > 0
      ORDER BY t.DepartureDate, t.DepartureTime"
 );
+
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
+
 while ($row = mysqli_fetch_assoc($result)) {
     $trips[(string)$row['TripID']] = formatTripRow($row);
 }
+
 mysqli_stmt_close($stmt);
 mysqli_close($conn);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -177,151 +188,164 @@ mysqli_close($conn);
   <title>Book a Trip - SAI System</title>
   <link rel="stylesheet" href="styles.css"/>
 </head>
+
 <body class="page-wrapper">
 
-  <!-- SHARED HEADER -->
-  <header class="navbar">
-    <div class="navbar-inner">
-      <a href="user-dashboard.php" class="nav-logo">
-        <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
-      </a>
-      <nav class="nav-links">
-        <a href="user-dashboard.php" class="nav-link">Dashboard</a>
-        <a href="view-trips.php" class="nav-link">View Trips</a>
-        <a href="add-booking.php" class="nav-link active">Book a Trip</a>
-        <a href="my-bookings.php" class="nav-link">My Bookings</a>
-        <a href="user-heat-map.php" class="nav-link">Heat Map</a>
-      </nav>
-      <div class="nav-right">
-        <span class="role-chip user">&#9679; User</span>
-        <span style="color:rgba(255,255,255,.65);font-size:.85rem;"><?= e($userName) ?></span>
-        <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
-      </div>
-      <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
-    </div>
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="user-dashboard.php" class="nav-logo">
+      <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
+    </a>
 
-    <div class="nav-mobile" id="nm">
+    <nav class="nav-links">
       <a href="user-dashboard.php" class="nav-link">Dashboard</a>
       <a href="view-trips.php" class="nav-link">View Trips</a>
       <a href="add-booking.php" class="nav-link active">Book a Trip</a>
-      <a href="my-bookings.php" class="nav-link">My Bookings</a>
+      <a href="my_bookings.php" class="nav-link">My Bookings</a>
       <a href="user-heat-map.php" class="nav-link">Heat Map</a>
-      <div class="nav-mobile-footer">
-        <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
-      </div>
-    </div>
-  </header>
+    </nav>
 
-  <div class="page-content">
-
-    <div class="search-page-head">
-      <h1 class="page-title">Add Booking</h1>
-      <p class="page-subtitle">Reserve a seat on an available trip</p>
+    <div class="nav-right">
+      <span class="role-chip user">&#9679; pilgrim</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">
+          <?= htmlspecialchars($_SESSION['User_Name']) ?>
+      </span>
+      <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
     </div>
 
-    <div id="bookingAlert" class="no-trips-message" style="<?= $errorMsg ? '' : 'display:none;' ?>"><?= e($errorMsg) ?></div>
+    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+  </div>
 
-    <form method="post" action="add-booking.php" id="bookingForm">
-      <!-- Booking form -->
-      <div class="card" style="padding:1.5rem; margin-bottom:1rem;">
-        <div class="form-card-title" style="margin-bottom:1.25rem;">
-          <i class="fa-regular fa-calendar-plus" style="color:var(--accent);"></i>
-          Booking Details
-        </div>
+  <div class="nav-mobile" id="nm">
+    <a href="user-dashboard.php" class="nav-link">Dashboard</a>
+    <a href="view-trips.php" class="nav-link">View Trips</a>
+    <a href="add-booking.php" class="nav-link active">Book a Trip</a>
+    <a href="my_bookings.php" class="nav-link">My Bookings</a>
+    <a href="user-heat-map.php" class="nav-link">Heat Map</a>
+    <div class="nav-mobile-footer">
+      <a href="logout.php" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+  </div>
+</header>
 
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" for="fullName">Full Name</label>
-          <input class="form-input" type="text" id="fullName" name="full_name" value="<?= e($fullName) ?>" placeholder="Enter your full name">
-        </div>
+<div class="page-content">
 
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" for="email">Email</label>
-          <input class="form-input" type="email" id="email" name="email" value="<?= e($email) ?>" placeholder="Enter your email">
-        </div>
+  <div class="search-page-head">
+    <h1 class="page-title">Add Booking</h1>
+    <p class="page-subtitle">Reserve a seat on an available trip</p>
+  </div>
 
-        <div class="form-group">
-          <label class="form-label" for="tripSelect">Select Trip</label>
-          <select class="form-select" id="tripSelect" name="trip_id">
-            <option value="">Choose a trip...</option>
-            <?php foreach ($trips as $tripKey => $trip): ?>
-              <option value="<?= e($tripKey) ?>" <?= $selectedTripKey === $tripKey ? 'selected' : '' ?>>
-                <?= e($trip['from']) ?> &rarr; <?= e($trip['to']) ?> | <?= e($trip['date_value']) ?> <?= e($trip['time']) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
+  <div id="bookingAlert" class="no-trips-message" style="<?= $errorMsg ? '' : 'display:none;' ?>">
+    <?= e($errorMsg) ?>
+  </div>
+
+  <form method="post" action="add-booking.php" id="bookingForm">
+
+    <div class="card" style="padding:1.5rem; margin-bottom:1rem;">
+      <div class="form-card-title" style="margin-bottom:1.25rem;">
+        <i class="fa-regular fa-calendar-plus" style="color:var(--accent);"></i>
+        Booking Details
       </div>
 
-      <!-- Available trips -->
-      <div class="search-results" id="availableTrips">
-        <?php if (empty($trips)): ?>
-          <div class="no-trips-message">No available trips at the moment.</div>
-        <?php endif; ?>
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label class="form-label" for="fullName">Full Name</label>
+        <input class="form-input" type="text" id="fullName" name="full_name" value="<?= e($fullName) ?>" placeholder="Enter your full name">
+      </div>
 
-        <?php foreach ($trips as $tripKey => $trip): ?>
-          <div class="trip-search-card selectable-trip" data-trip="<?= e($tripKey) ?>">
-            <div class="trip-search-bar"></div>
-            <div class="trip-search-content">
-              <div class="trip-search-top">
-                <div class="trip-search-title-wrap">
-                  <div class="trip-search-title">Bus <?= e($trip['bus']) ?></div>
-                  <div class="trip-search-id">#<?= e($trip['id']) ?></div>
-                </div>
-                <span class="search-status-badge">active</span>
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label class="form-label" for="email">Email</label>
+        <input class="form-input" type="email" id="email" name="email" value="<?= e($email) ?>" placeholder="Enter your email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="tripSelect">Select Trip</label>
+        <select class="form-select" id="tripSelect" name="trip_id">
+          <option value="">Choose a trip...</option>
+
+          <?php foreach ($trips as $tripKey => $trip): ?>
+            <option value="<?= e($tripKey) ?>" <?= $selectedTripKey === $tripKey ? 'selected' : '' ?>>
+              <?= e($trip['from']) ?> &rarr; <?= e($trip['to']) ?> | <?= e($trip['date_value']) ?> <?= e($trip['time']) ?>
+            </option>
+          <?php endforeach; ?>
+
+        </select>
+      </div>
+    </div>
+
+    <div class="search-results" id="availableTrips">
+
+      <?php if (empty($trips)): ?>
+        <div class="no-trips-message">No available trips at the moment.</div>
+      <?php endif; ?>
+
+      <?php foreach ($trips as $tripKey => $trip): ?>
+        <div class="trip-search-card selectable-trip" data-trip="<?= e($tripKey) ?>">
+          <div class="trip-search-bar"></div>
+
+          <div class="trip-search-content">
+            <div class="trip-search-top">
+              <div class="trip-search-title-wrap">
+                <div class="trip-search-title">Bus <?= e($trip['bus']) ?></div>
+                <div class="trip-search-id">#<?= e($trip['id']) ?></div>
               </div>
-              <div class="trip-search-route">
-                <div class="trip-search-place"><?= e($trip['from']) ?></div>
-                <div class="trip-search-line"></div>
-                <div class="trip-search-place"><?= e($trip['to']) ?></div>
-              </div>
-              <div class="trip-search-meta">
-                <span><?= e($trip['date']) ?></span>
-                <span><?= e($trip['time']) ?></span>
-                <span><?= e($trip['seats']) ?></span>
-              </div>
+              <span class="search-status-badge">active</span>
+            </div>
+
+            <div class="trip-search-route">
+              <div class="trip-search-place"><?= e($trip['from']) ?></div>
+              <div class="trip-search-line"></div>
+              <div class="trip-search-place"><?= e($trip['to']) ?></div>
+            </div>
+
+            <div class="trip-search-meta">
+              <span><?= e($trip['date']) ?></span>
+              <span><?= e($trip['time']) ?></span>
+              <span><?= e($trip['seats']) ?></span>
             </div>
           </div>
-        <?php endforeach; ?>
-      </div>
-
-      <button type="submit" id="confirmBookingBtn" class="btn btn-accent btn-full" style="margin-top:1rem; padding:1rem 1.25rem; font-size:1rem; font-weight:800;">
-        <i class="fa-solid fa-circle-check"></i>
-        Confirm Booking
-      </button>
-    </form>
-
-  </div>
-
-  <!-- Confirmation modal -->
-  <div id="successModal" class="modal <?= $successData ? 'active' : '' ?>">
-    <div class="modal-box qr-pass-box" style="border-top: 5px solid var(--primary);">
-      <h3 id="qrTitle">Boarding Pass</h3>
-
-      <div class="qr-frame">
-        <div id="qrCodeBox">
-          <i class="fa-solid fa-qrcode" style="font-size: 100px; color:#1f3566;"></i>
         </div>
-      </div>
+      <?php endforeach; ?>
 
-      <p id="successMsg" class="qr-success-text">
-        <?php if ($successData): ?>
-          Reservation confirmed for <?= e($successData['date']) ?> at <?= e($successData['time']) ?>
-        <?php endif; ?>
-      </p>
-      <p id="qrInfo" class="qr-info-text">
-        <?php if ($successData): ?>
-          <?= e($successData['from']) ?> &rarr; <?= e($successData['to']) ?> | <?= e($successData['bus']) ?><br>
-          <?= e($successData['qr_value'] ?? '') ?>
-        <?php endif; ?>
-      </p>
-
-      <button class="btn-primary" type="button" onclick="hideModals()">Close</button>
     </div>
-  </div>
 
-  <footer style="border-top:1px solid var(--border);padding:1.25rem 1rem;text-align:center;background:var(--bg);">
-    <p class="text-muted text-sm">&copy; 2026 SAII. All rights reserved.</p>
-  </footer>
+    <button type="submit" id="confirmBookingBtn" class="btn btn-accent btn-full" style="margin-top:1rem; padding:1rem 1.25rem; font-size:1rem; font-weight:800;">
+      <i class="fa-solid fa-circle-check"></i>
+      Confirm Booking
+    </button>
+
+  </form>
+</div>
+
+<div id="successModal" class="modal <?= $successData ? 'active' : '' ?>">
+  <div class="modal-box qr-pass-box" style="border-top: 5px solid var(--primary);">
+    <h3 id="qrTitle">Boarding Pass</h3>
+
+    <div class="qr-frame">
+      <div id="qrCodeBox">
+        <i class="fa-solid fa-qrcode" style="font-size: 100px; color:#1f3566;"></i>
+      </div>
+    </div>
+
+    <p id="successMsg" class="qr-success-text">
+      <?php if ($successData): ?>
+        Reservation confirmed for <?= e($successData['date']) ?> at <?= e($successData['time']) ?>
+      <?php endif; ?>
+    </p>
+
+    <p id="qrInfo" class="qr-info-text">
+      <?php if ($successData): ?>
+        <?= e($successData['from']) ?> &rarr; <?= e($successData['to']) ?> | <?= e($successData['bus']) ?><br>
+        <?= e($successData['qr_value'] ?? '') ?>
+      <?php endif; ?>
+    </p>
+
+    <button class="btn-primary" type="button" onclick="hideModals()">Close</button>
+  </div>
+</div>
+
+<footer style="border-top:1px solid var(--border);padding:1.25rem 1rem;text-align:center;background:var(--bg);">
+  <p class="text-muted text-sm">&copy; 2026 SAII. All rights reserved.</p>
+</footer>
 
 <script>
   const tripSelect = document.getElementById("tripSelect");
@@ -435,5 +459,6 @@ mysqli_close($conn);
     }
   });
 </script>
+
 </body>
 </html>
