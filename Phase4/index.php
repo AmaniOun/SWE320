@@ -19,12 +19,9 @@ session_start();
       <img src="image/logo.png" alt="SAII Logo" class="logo-img"/>
       <span class="logo-text">Smart Hajj Transportation</span>
     </div>
-
-    <?php if(isset($_SESSION['UserID'])): ?>
-      <a href="dashboard.php" class="btn btn-accent"><b>Dashboard →</b></a>
-    <?php else: ?>
-      <a href="signin.php" class="btn btn-accent"><b>Sign In →</b></a>
-    <?php endif; ?>
+      
+      <a href="signin.php" class="btn btn-accent"><b>Sign In →</b> </a>
+    
 
   </div>
 </header>
