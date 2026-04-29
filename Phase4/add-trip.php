@@ -1,5 +1,5 @@
 <?php
-//session_start();
+session_start();
 require_once 'db_connection.php';
 
 $errors = [];
@@ -36,16 +36,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $adminId = $_SESSION['AdminID'] ?? 1;
+    // نجيب AdminID من قاعدة البيانات بناءً على UserID المخزن في الـ session
+    $adminId = null;
+    $sessionUserId = $_SESSION['UserID'] ?? $_SESSION['user_id'] ?? $_SESSION['AdminID'] ?? null;
 
-    if (empty($errors) && $busId) {
+    if ($sessionUserId) {
+        $aStmt = mysqli_prepare($conn, "SELECT AdminID FROM admin WHERE UserID = ? LIMIT 1");
+        mysqli_stmt_bind_param($aStmt, 'i', $sessionUserId);
+        mysqli_stmt_execute($aStmt);
+        $aRes = mysqli_stmt_get_result($aStmt);
+        $aRow = mysqli_fetch_assoc($aRes);
+        mysqli_stmt_close($aStmt);
+        $adminId = $aRow['AdminID'] ?? null;
+    }
+
+    if (empty($adminId)) {
+        $errors['db'] = 'Admin account not found. Make sure you are logged in as an admin.';
+    }
+
+    if (empty($errors) && $busId && $adminId) {
         $stmt = mysqli_prepare($conn,
             "INSERT INTO trip
              (Origin, Destination, DepartureDate, DepartureTime, TotalSeats, AvailableSeats,
               Status, Pickup_Location, BusID, AdminID)
-             VALUES (?, ?, ?, ?, ?, ?, 'Scheduled', ?, ?, ?)");
+             VALUES (?, ?, ?, ?, ?, ?, 'Confirmed', ?, ?, ?)");
 
-        mysqli_stmt_bind_param($stmt, 'ssssiisii',
+        mysqli_stmt_bind_param($stmt, 'ssssiiisi',
             $origin, $destination, $date, $time,
             $totalSeats, $totalSeats,   
             $pickup, $busId, $adminId);
