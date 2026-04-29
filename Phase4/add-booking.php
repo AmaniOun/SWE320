@@ -1,25 +1,33 @@
 ﻿<?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'user') {
+if (!isset($_SESSION['UserID'])) {
     header('Location: signin.php');
     exit;
 }
 
-require 'db.php';
+require 'db_connection.php';
 
-$userID = (int)($_SESSION['user_id'] ?? 0);
-$userName = $_SESSION['user_name'] ?? 'Khalid';
-$userEmail = $_SESSION['email'] ?? '';
+$userID = (int)$_SESSION['UserID'];
+$userName = $_SESSION['User_Name'] ?? 'User';
+$userEmail = $_SESSION['Email'] ?? '';
 $pilgrimID = (int)($_SESSION['pilgrim_id'] ?? 0);
 
-if (!$pilgrimID && $userID) {
-    $stmt = mysqli_prepare($conn, 'SELECT PilgrimID FROM pilgrim WHERE UserID = ? LIMIT 1');
+if ($userEmail === '' || !$pilgrimID) {
+    $stmt = mysqli_prepare($conn,
+        'SELECT u.Email, p.PilgrimID
+         FROM user u
+         LEFT JOIN pilgrim p ON p.UserID = u.UserID
+         WHERE u.UserID = ?
+         LIMIT 1'
+    );
     mysqli_stmt_bind_param($stmt, 'i', $userID);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     if ($row = mysqli_fetch_assoc($result)) {
-        $pilgrimID = (int)$row['PilgrimID'];
+        $userEmail = $row['Email'] ?? $userEmail;
+        $pilgrimID = (int)($row['PilgrimID'] ?? 0);
+        $_SESSION['Email'] = $userEmail;
         $_SESSION['pilgrim_id'] = $pilgrimID;
     }
     mysqli_stmt_close($stmt);
