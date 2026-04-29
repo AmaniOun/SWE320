@@ -254,7 +254,7 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`UserID`, `Email`, `Password`, `User_Name`) VALUES
-(1, 'moh@saii.sa', '$$2y$10$mjRmylUR0LtJnTFyWT.0fOnAOsnM8sqLwMO1whx5xdl1uy36/N3Sm', 'Mohammed Al-Otaibi'),
+(1, 'moh@saii.sa', '$2y$10$9WDqVo4ReEBMjacYjruZW.RoVB7jA2Aor33qGSVMt/YEJNWlrlROu', 'Mohammed Al-Otaibi'),
 (2, 'kha@saii.sa', '$2y$10$6xwHWcBYfhZfg8GdxrSr1uDK0YpRSVc3yQTTaFlNlG1lUL87qhsVe', 'Khalid Al-Ghamdi'),
 (3, 'Ahmed@gmail.com', '$2y$10$957PaBR2n0D2W0DdvS/CgObgH72xRC814bCO6CCcWun9q1lV/77iy', 'Ahmed Al-Zahrani'),
 (4, 'Omar@gmail.com', '$2y$10$Fqpm2APQACQKa2J8Ke0UquN8ft.j/INsHBjBJnx93RSJJRhCotKfS', 'Omar Al-Shehri'),
