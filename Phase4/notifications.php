@@ -2,7 +2,6 @@
 session_start();
 include('db_connection.php');
 
-/* ───── Login check ───── */
 if (!isset($_SESSION['UserID'])) {
     header("Location: signin.php");
     exit();

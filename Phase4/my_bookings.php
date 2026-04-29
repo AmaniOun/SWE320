@@ -9,6 +9,7 @@ if (!isset($_SESSION['UserID'])) {
 }
 
 $host = "localhost";
+$port = "8889";
 $dbname = "saii";
 $dbuser = "root";
 $dbpass = "root";
