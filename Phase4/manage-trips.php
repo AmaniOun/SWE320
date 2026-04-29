@@ -49,10 +49,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ========================= */
     if ($action === 'delete' && $tripId) {
 
-        mysqli_query($conn, "DELETE FROM notification WHERE TripID=$tripId");
-        mysqli_query($conn, "DELETE FROM trip WHERE TripID=$tripId");
+        // 1) حذف QR Codes المرتبطة بحجوزات هذي الرحلة
+        $stmt = mysqli_prepare($conn, "
+            DELETE q FROM qrcode q
+            JOIN booking b ON q.BookingID = b.BookingID
+            WHERE b.TripID = ?
+        ");
+        mysqli_stmt_bind_param($stmt, 'i', $tripId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
 
-        $_SESSION['toast'] = ['msg' => "Trip #$tripId deleted", 'type' => 'error'];
+        // 2) حذف الحجوزات المرتبطة بالرحلة
+        $stmt = mysqli_prepare($conn, "DELETE FROM booking WHERE TripID = ?");
+        mysqli_stmt_bind_param($stmt, 'i', $tripId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        // 3) حذف الإشعارات المرتبطة
+        $stmt = mysqli_prepare($conn, "DELETE FROM notification WHERE TripID = ?");
+        mysqli_stmt_bind_param($stmt, 'i', $tripId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        // 4) حذف الرحلة نفسها
+        $stmt = mysqli_prepare($conn, "DELETE FROM trip WHERE TripID = ?");
+        mysqli_stmt_bind_param($stmt, 'i', $tripId);
+        if (mysqli_stmt_execute($stmt)) {
+            $_SESSION['toast'] = ['msg' => "Trip #$tripId deleted successfully", 'type' => 'error'];
+        } else {
+            $_SESSION['toast'] = ['msg' => "Error deleting trip: " . mysqli_error($conn), 'type' => 'error'];
+        }
+        mysqli_stmt_close($stmt);
     }
 
     /* =========================
@@ -86,11 +113,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($busId) {
 
-            // تحديث الرحلة
+            // نحسب عدد الحجوزات الـ Confirmed الحالية للرحلة
+            $bStmt = mysqli_prepare($conn,
+                "SELECT COUNT(*) AS booked FROM booking WHERE TripID=? AND BookingStatus='Confirmed'");
+            mysqli_stmt_bind_param($bStmt, 'i', $tripId);
+            mysqli_stmt_execute($bStmt);
+            $bRes = mysqli_stmt_get_result($bStmt);
+            $bRow = mysqli_fetch_assoc($bRes);
+            mysqli_stmt_close($bStmt);
+            $bookedCount = (int)($bRow['booked'] ?? 0);
+
+            // AvailableSeats = TotalSeats الجديد - عدد الحجوزات الموجودة
+            // لو TotalSeats أقل من الحجوزات نحطها صفر (ما تطلع سالبة)
+            $newAvailable = max(0, $seats - $bookedCount);
+
+            // تحديث الرحلة مع AvailableSeats الصحيح
             $stmt = mysqli_prepare($conn,
-                "UPDATE trip SET Origin=?, Destination=?, DepartureDate=?, DepartureTime=?, TotalSeats=?, BusID=? WHERE TripID=?");
-            mysqli_stmt_bind_param($stmt, 'sssssii',
-                $origin, $destination, $date, $time, $seats, $busId, $tripId);
+                "UPDATE trip SET Origin=?, Destination=?, DepartureDate=?, DepartureTime=?, TotalSeats=?, AvailableSeats=?, BusID=? WHERE TripID=?");
+            mysqli_stmt_bind_param($stmt, 'sssssiis',
+                $origin, $destination, $date, $time, $seats, $newAvailable, $busId, $tripId);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
 
