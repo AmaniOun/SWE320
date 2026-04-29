@@ -4,7 +4,7 @@ include('db_connection.php');
 
 /* ───── Login check ───── */
 if (!isset($_SESSION['UserID'])) {
-    header("Location: login.php");
+    header("Location: signin.php");
     exit();
 }
 

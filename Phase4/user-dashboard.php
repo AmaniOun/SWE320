@@ -34,7 +34,7 @@ $result = $stmt->get_result();
     }
 
     if (!$pilgrimID) {
-        header("Location: login.php");
+        header("Location: signin.php");
         exit();
     }
 
