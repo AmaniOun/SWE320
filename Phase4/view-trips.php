@@ -228,7 +228,7 @@ if (!$result) {
             <div class="trip-search-top">
               <div class="trip-search-title-wrap">
                 <div class="trip-search-title">
-                  Bus <?php echo htmlspecialchars($row['Bus_Number']); ?>
+                  <?php echo htmlspecialchars($row['Bus_Number']); ?>
                 </div>
 
                 <div class="trip-search-id">
