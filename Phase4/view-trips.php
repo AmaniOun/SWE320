@@ -184,12 +184,10 @@ if (!$result) {
 
         <div class="search-clear-wrap">
 
-  <!-- زر البحث -->
   <button type="submit" class="btn btn-accent search-clear-btn">
     <b>Search</b>
   </button>
 
-  <!-- زر الكلير -->
   <button type="button" class="btn btn-accent search-clear-btn" onclick="clearFilters()">
     <b>Clear</b>
   </button>
