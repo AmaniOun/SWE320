@@ -411,11 +411,22 @@ h3 { font-size:1rem; font-weight:600; color:var(--fg) }
 .map-dot-green  { background:#59c36a }
 .map-badge { display:inline-block; margin-top:8px; padding:.38rem .9rem; border-radius:999px; color:#fff; font-size:.82rem; font-weight:800; line-height:1; box-shadow:0 4px 10px rgba(0,0,0,.12); white-space:nowrap }
 .map-dot-wrapper[data-site="makkah"] .map-badge,
-.map-dot-wrapper[data-site="arafat"] .map-badge  { background:#e2574c }
-.map-dot-wrapper[data-site="jamarat"] .map-badge,
-.map-dot-wrapper[data-site="mina"] .map-badge     { background:#eb7d32 }
-.map-dot-wrapper[data-site="muzdalifah"] .map-badge { background:#eb7d32 }
-.map-dot-wrapper[data-site="aziziyah"] .map-badge  { background:#e2574c  }
+.map-dot-wrapper[data-site="arafat"] .map-badge {
+  background-color:#e2574c !important;
+}
+
+.map-dot-wrapper[data-site="mina"] .map-badge,
+.map-dot-wrapper[data-site="jamarat"] .map-badge {
+  background-color:#eb7d32 !important;
+}
+
+.map-dot-wrapper[data-site="muzdalifah"] .map-badge {
+  background-color:#e0b43a !important;
+}
+
+.map-dot-wrapper[data-site="aziziyah"] .map-badge {
+  background-color:#59c36a !important;
+}
 .map-dot-wrapper:hover .map-dot,
 .map-dot-wrapper.is-active .map-dot { transform:scale(1.12); box-shadow:0 0 0 7px rgba(255,255,255,.6),0 12px 22px rgba(0,0,0,.14); filter:brightness(1.03) }
 .map-dot-wrapper:hover .map-badge,
