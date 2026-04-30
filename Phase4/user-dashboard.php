@@ -9,7 +9,6 @@ if (!isset($_SESSION['UserID'])) {
 
 $userID = $_SESSION['UserID'];
 
-/* ───── جلب اسم المستخدم ───── */
 $stmt = $conn->prepare("SELECT User_Name FROM user WHERE UserID = ?");
 $stmt->bind_param("i", $userID);
 $stmt->execute();
@@ -21,7 +20,6 @@ if ($row = $result->fetch_assoc()) {
     $_SESSION['User_Name'] = "User";
 }
 
-/* ───── جلب PilgrimID ───── */
 $pilgrimID = null;
 
 $stmt = $conn->prepare("SELECT PilgrimID FROM pilgrim WHERE UserID = ? LIMIT 1");
@@ -38,7 +36,6 @@ $result = $stmt->get_result();
         exit();
     }
 
-    /* ───── عدد الإشعارات الخاصة برحلات الحاج ───── */
     $notifCount = 0;
 
    $stmt = $conn->prepare("
@@ -58,7 +55,6 @@ $result = $stmt->get_result();
         $notifCount = (int)$row['cnt'];
     }
 
-    /* ───── الرحلات المتاحة ───── */
     $trips = [];
 
     $tripsResult = $conn->query("
@@ -96,7 +92,6 @@ while ($row = $tripsResult->fetch_assoc()) {
     $trips[] = $row;
 }
 
-/* ───── حجوزات المستخدم ───── */
 $myBookings = [];
 
 $stmt = $conn->prepare("
@@ -126,7 +121,6 @@ function fmtDate($d) {
     return $months[(int)$parts[1] - 1] . ' ' . (int)$parts[2] . ', ' . $parts[0];
 }
 
-// ✅ وقت 24 ساعة
 function fmtTime($t) {
     if (!$t) return '';
     return substr($t, 0, 5);
@@ -170,7 +164,6 @@ function getFillClass($total, $available) {
   <title>My Dashboard — SAII Hajj Transport</title>
   <link rel="stylesheet" href="styles.css"/>
   <style>
-    /* ── عداد الإشعارات ── */
     .notif-bell-wrap {
       position: absolute;
       top: 0.1rem;
@@ -238,7 +231,6 @@ function getFillClass($total, $available) {
   <div class="user-hero">
     <div class="user-hero-inner">
 
-      <!-- ✅ الجرس مع عداد الإشعارات -->
       <a href="notifications.php" class="notif-bell-wrap" title="View Notifications">
         🔔
         <?php if ($notifCount > 0): ?>
