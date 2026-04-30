@@ -2,12 +2,7 @@
 session_start();
 require_once 'db_connection.php';
 
-/* =========================
-   AUTO-STATUS ENGINE
-   النقطة 1: كل الكراسي محجوزة → Completed
-   النقطة 2: تاريخ الرحلة عدا → Completed
-========================= */
-// النقطة 2: رحلات تاريخها عدا → Completed
+
 mysqli_query($conn,
     "UPDATE trip
      SET Status = 'Completed'
@@ -20,7 +15,6 @@ mysqli_query($conn,
 
 
 
-// النقطة 1 عكس: لو صار في مقاعد متاحة (بعد كنسل حجز) وتاريخها لسا ما عدا → ترجع Confirmed
 mysqli_query($conn,
     "UPDATE trip
      SET Status = 'Confirmed'
@@ -40,19 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ========================= */
     if ($action === 'cancel' && $tripId) {
 
-      // 1) إلغاء الرحلة
       $stmt = mysqli_prepare($conn, "UPDATE trip SET Status='Cancelled' WHERE TripID=?");
       mysqli_stmt_bind_param($stmt, 'i', $tripId);
       mysqli_stmt_execute($stmt);
       mysqli_stmt_close($stmt);
 
-      // 2) إلغاء كل الحجوزات المرتبطة
       $stmt = mysqli_prepare($conn, "UPDATE booking SET BookingStatus='Cancelled' WHERE TripID=?");
       mysqli_stmt_bind_param($stmt, 'i', $tripId);
       mysqli_stmt_execute($stmt);
       mysqli_stmt_close($stmt);
 
-      // 3) (اختياري 🔥 مهم) تحديث QR Codes إلى Expired
       $stmt = mysqli_prepare($conn, "
           UPDATE qrcode q
           JOIN booking b ON q.BookingID = b.BookingID
@@ -63,7 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       mysqli_stmt_execute($stmt);
       mysqli_stmt_close($stmt);
 
-      // 4) إشعار
       $msg = "The trip has been cancelled";
       $stmt = mysqli_prepare($conn, "INSERT INTO notification (message, TripID) VALUES (?, ?)");
       mysqli_stmt_bind_param($stmt, 'si', $msg, $tripId);
@@ -78,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ========================= */
     if ($action === 'delete' && $tripId) {
 
-        // نتحقق من حالة الرحلة أولاً
         $chkStmt = mysqli_prepare($conn, "SELECT Status FROM trip WHERE TripID=? LIMIT 1");
         mysqli_stmt_bind_param($chkStmt, 'i', $tripId);
         mysqli_stmt_execute($chkStmt);
@@ -87,11 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($chkStmt);
         $tripStatus = $chkRow['Status'] ?? '';
 
-        // النقطة 3: لو الرحلة Confirmed نمنع الحذف ونطلب كانسل أول
         if ($tripStatus === 'Confirmed') {
             $_SESSION['toast'] = ['msg' => "⚠️ Trip #$tripId must be cancelled before deleting.", 'type' => 'warn'];
         } else {
-            // 1) حذف QR Codes المرتبطة بحجوزات هذي الرحلة
             $stmt = mysqli_prepare($conn, "
                 DELETE q FROM qrcode q
                 JOIN booking b ON q.BookingID = b.BookingID
@@ -101,19 +88,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
 
-            // 2) حذف الحجوزات المرتبطة بالرحلة
             $stmt = mysqli_prepare($conn, "DELETE FROM booking WHERE TripID = ?");
             mysqli_stmt_bind_param($stmt, 'i', $tripId);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
 
-            // 3) حذف الإشعارات المرتبطة
             $stmt = mysqli_prepare($conn, "DELETE FROM notification WHERE TripID = ?");
             mysqli_stmt_bind_param($stmt, 'i', $tripId);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
 
-            // 4) حذف الرحلة نفسها
             $stmt = mysqli_prepare($conn, "DELETE FROM trip WHERE TripID = ?");
             mysqli_stmt_bind_param($stmt, 'i', $tripId);
             if (mysqli_stmt_execute($stmt)) {
@@ -137,7 +121,6 @@ if ($action === 'edit' && $tripId) {
     $newSeats    = (int)($_POST['TotalSeats'] ?? 0);
     $busNum      = trim($_POST['Bus_Number'] ?? '');
 
-    // جلب بيانات الرحلة الحالية
     $tripStmt = mysqli_prepare($conn, "
         SELECT TotalSeats, AvailableSeats, BusID,
                DepartureDate, DepartureTime,
@@ -157,10 +140,8 @@ if ($action === 'edit' && $tripId) {
     $oldTotalSeats     = (int)$oldRow['TotalSeats'];
     $oldAvailableSeats = (int)$oldRow['AvailableSeats'];
 
-    // المقاعد المحجوزة فعلياً
     $bookedSeats = $oldTotalSeats - $oldAvailableSeats;
 
-    // جلب بيانات الباص
     $busStmt = mysqli_prepare($conn,
         "SELECT BusID, Capacity FROM bus WHERE Bus_Number=? LIMIT 1"
     );
@@ -178,7 +159,6 @@ if ($action === 'edit' && $tripId) {
     $busId = $busRow['BusID'] ?? null;
     $busCapacity = (int)($busRow['Capacity'] ?? 0);
 
-    // التحقق من الباص
     if (!$busId) {
 
         $_SESSION['toast'] = [
@@ -190,7 +170,6 @@ if ($action === 'edit' && $tripId) {
         exit();
     }
 
-    // ممنوع المقاعد تتجاوز سعة الباص
     if ($newSeats > $busCapacity) {
 
         $_SESSION['toast'] = [
@@ -202,7 +181,6 @@ if ($action === 'edit' && $tripId) {
         exit();
     }
 
-    // ممنوع تقل عن المحجوز فعلياً
     if ($newSeats < $bookedSeats) {
 
         $_SESSION['toast'] = [
@@ -214,10 +192,8 @@ if ($action === 'edit' && $tripId) {
         exit();
     }
 
-    // حساب المقاعد المتاحة الجديدة
     $newAvailableSeats = $newSeats - $bookedSeats;
 
-    // تحديث الرحلة
     $updateStmt = mysqli_prepare($conn, "
         UPDATE trip
         SET Origin=?,
@@ -335,7 +311,6 @@ while ($row = mysqli_fetch_assoc($res)) {
     $trips[] = $row;
 }
 
-// جلب الباصات
 $buses = [];
 $busRes = mysqli_query($conn, "SELECT BusID, Bus_Number, Capacity FROM bus WHERE Status='Active' ORDER BY Bus_Number");
 while ($busRow = mysqli_fetch_assoc($busRes)) {
@@ -664,6 +639,12 @@ unset($_SESSION['toast']);
 <?php endif; ?>
 
 <script>
+  const editBusCapacities = {
+    <?php foreach ($buses as $b): ?>
+    "<?= addslashes($b['Bus_Number']) ?>": <?= (int)$b['Capacity'] ?>,
+    <?php endforeach; ?>
+  };
+
   function openEdit(id, from, to, date, time, seats, bus) {
     document.getElementById('edit-trip-id').value = id;
     document.getElementById('edit-from').value    = from;
@@ -672,8 +653,30 @@ unset($_SESSION['toast']);
     document.getElementById('edit-time').value    = time;
     document.getElementById('edit-seats').value   = seats;
     document.getElementById('edit-bus').value     = bus;
+
+    const cap = editBusCapacities[bus];
+    if (cap) document.getElementById('edit-seats').max = cap;
+
     openModal('edit-modal');
   }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const editBus = document.getElementById('edit-bus');
+    const editSeats = document.getElementById('edit-seats');
+    if (editBus && editSeats) {
+      editBus.addEventListener('change', function() {
+        const cap = editBusCapacities[this.value];
+        if (cap) {
+          editSeats.max = cap;
+          if (parseInt(editSeats.value) > cap) editSeats.value = cap;
+        }
+      });
+      editSeats.addEventListener('input', function() {
+        const max = parseInt(this.max || 200);
+        if (parseInt(this.value) > max) this.value = max;
+      });
+    }
+  });
   function openCancelConfirm(id) {
     document.getElementById('cancel-confirm-trip-id').value = id;
     openModal('cancel-confirm-modal');
