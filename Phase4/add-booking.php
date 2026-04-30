@@ -37,7 +37,7 @@ function e($value) {
 
 function formatTripRow($row) {
     return [
-        'id' => 'TRP-' . str_pad($row['TripID'], 3, '0', STR_PAD_LEFT),
+        'id' => 'TRP-' . $row['TripID'],
         'bus' => $row['Bus_Number'],
         'from' => $row['Origin'],
         'to' => $row['Destination'],
@@ -254,6 +254,11 @@ mysqli_close($conn);
                 <span><?= e($trip['time']) ?></span>
                 <span><?= e($trip['seats']) ?></span>
               </div>
+              <?php if (!empty($trip['pickup'])): ?>
+              <div class="trip-search-meta" style="margin-top:6px;">
+                <span><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i> Pickup: <?= e($trip['pickup']) ?></span>
+              </div>
+              <?php endif; ?>
             </div>
           </div>
         <?php endforeach; ?>
