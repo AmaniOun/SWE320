@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Trip Notification — SAII Hajj Transport</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body class="page-wrapper">
+
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="user-dashboard.html" class="nav-logo">
+      <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
+    </a>
+    <nav class="nav-links">
+      <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+      <a href="view-trips.html"   class="nav-link">View Trips</a>
+      <a href="add-booking.html"  class="nav-link">Book a Trip</a>
+      <a href="my-bookings.html"  class="nav-link">My Bookings</a>
+      <a href="user-heat-map.html" class="nav-link">Heat Map</a>
+    </nav>
+    <div class="nav-right">
+      <span class="role-chip user">&#9679; User</span>
+      <span style="color:rgba(255,255,255,.65);font-size:.85rem;" id="user-name">Khalid</span>
+      <a href="signin.html" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="nav-mobile" id="nm">
+    <a href="user-dashboard.html" class="nav-link">Dashboard</a>
+    <a href="view-trips.html" class="nav-link">View Trips</a>
+    <a href="add-booking.html" class="nav-link">Book a Trip</a>
+    <a href="my-bookings.html" class="nav-link">My Bookings</a>
+    <a href="user-heat-map.html" class="nav-link">Heat Map</a>
+    <div class="nav-mobile-footer">
+      <a href="signin.html" class="btn btn-sm btn-outline-dark">Logout</a>
+    </div>
+  </div>
+</header>
+
+<div class="page-content">
+<a href="user-dashboard.html" class="back-arrow" style="text-decoration:none; color:#333; font-size:0.9rem; margin-bottom:0.5rem; float:right;">
+  <b>← Back to Dashboard</b> 
+</a>
+    <h2>Trip Notifications</h2>
+    <p>Please check your trips and review any potential delays.</p>
+    <br>
+  <div class="trips-grid" id="notification-grid">
+    <!-- Notifications rendered by JS -->
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  <p>© 2026 SAII. All rights reserved.</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var DELAYS = [
+  { id: 'TRP-002', route: 'Arafat → Muzdalifah', originalTime: '14:30', newTime: '15:15', bus: 'BUS-07', reason: 'Traffic congestion' },
+  { id: 'TRP-004', route: 'Mina → Makkah', originalTime: '10:00', newTime: '10:45', bus: 'BUS-03', reason: 'Road maintenance' }
+];
+
+function renderNotifications() {
+  var html = '';
+  DELAYS.forEach(function(d){
+    html +=
+      '<div class="trip-photo-card">' +
+        '<div class="trip-photo-body">' +
+          '<div class="trip-photo-route">'+d.route+'</div>' +
+          '<div class="trip-photo-meta">' +
+            '<span>🚌 '+d.bus+'</span>' +
+            '<span>⏰ Original: '+d.originalTime+'</span>' +
+            '<span>⏰ New: '+d.newTime+'</span>' +
+          '</div>' +
+          '<div class="trip-photo-footer">' +
+            '<span style="color:#d9534f;">⚠ '+d.reason+'</span>' +
+            '<button class="btn btn-sm btn-accent" onclick="acknowledge(\''+d.id+'\')">Acknowledge</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  });
+  document.getElementById('notification-grid').innerHTML = html;
+}
+
+function acknowledge(id){
+  showToast('You acknowledged delay for '+id,'info');
+}
+
+var _tt;
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type||'info') + ' show';
+  clearTimeout(_tt);
+  _tt = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+
+renderNotifications();
+</script>
+</body>
+</html>

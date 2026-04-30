@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Sign Up — SAII Hajj Transport</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- ── Shared Header ── -->
+<header style="position:sticky;top:0;z-index:200;background:#F0ECE6;border-bottom:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.1)">
+  <div style="max-width:1152px;margin:0 auto;padding:0 1.5rem;height:64px;display:flex;align-items:center;justify-content:space-between">
+      <a href="index.html" class="nav-logo">
+        <img src="image/logo.png" alt="SAII Logo" class="saii-img"/>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Card ── -->
+  <div class="auth-body">
+    <div class="auth-card wide">
+
+      <div class="auth-logo-wrap">
+        <img src="image/logo.png" alt="SAII Logo"/>
+      </div>
+
+      <h1>Create Your Account</h1>
+      <p class="auth-subtitle">Join SAII Hajj Transport today</p>
+
+      <!-- Name row -->
+      <div class="name-row">
+        <div class="form-group">
+          <label class="form-label" for="su-fname">First Name</label>
+          <input class="form-input" type="text" id="su-fname" placeholder="Ahmed"
+                 autocomplete="given-name" oninput="clearFE('su-fname','err-fname')"/>
+          <span class="field-error" id="err-fname">First name is required</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="su-lname">Last Name</label>
+          <input class="form-input" type="text" id="su-lname" placeholder="Al-Rashid"
+                 autocomplete="family-name" oninput="clearFE('su-lname','err-lname')"/>
+          <span class="field-error" id="err-lname">Last name is required</span>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label class="form-label" for="su-email">Email Address</label>
+        <div class="input-wrapper">
+          <span class="input-icon-left">✉</span>
+          <input class="form-input input-with-icon" type="email" id="su-email"
+                 placeholder="you@example.com" autocomplete="email"
+                 oninput="clearFE('su-email','err-su-email')"/>
+        </div>
+        <span class="field-error" id="err-su-email">Please enter a valid email</span>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label" for="su-pass">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon-left">🔒</span>
+          <input class="form-input input-with-icon" type="password" id="su-pass"
+                 placeholder="Min. 8 characters" autocomplete="new-password"
+                 oninput="checkStrength(); clearFE('su-pass','err-su-pass')"/>
+        </div>
+        <div class="pw-strength-wrap" id="pw-strength">
+          <div class="pw-bar"></div><div class="pw-bar"></div>
+          <div class="pw-bar"></div><div class="pw-bar"></div>
+          <span class="pw-label" id="pw-label"></span>
+        </div>
+        <span class="field-error" id="err-su-pass">Password must be at least 8 characters</span>
+      </div>
+
+      <!-- Confirm password -->
+      <div class="form-group">
+        <label class="form-label" for="su-confirm">Confirm Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon-left">🔒</span>
+          <input class="form-input input-with-icon" type="password" id="su-confirm"
+                 placeholder="Re-enter password" autocomplete="new-password"
+                 oninput="clearFE('su-confirm','err-su-confirm')"/>
+        </div>
+        <span class="field-error" id="err-su-confirm">Passwords do not match</span>
+      </div>
+
+      <!-- Terms -->
+      
+
+      <button class="btn btn-primary btn-full btn-auth" onclick="doSignup()">Create Account</button>
+
+      <div class="auth-footer centered">
+        <span>Already have an account?</span>
+        <a href="signin.html" class="link-accent">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Shared Footer ── -->
+  <footer class="site-footer">
+    <p>© 2026 SAII. All rights reserved.</p>
+  </footer>
+
+</div><!-- /auth-page -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var EXISTING_EMAILS = ['admin@saii.com','meow@saii.com','user@saii.com'];
+
+  function checkStrength() {
+    var pw=document.getElementById('su-pass').value;
+    var wrap=document.getElementById('pw-strength');
+    var label=document.getElementById('pw-label');
+    if(!pw){ wrap.className='pw-strength-wrap'; label.textContent=''; return; }
+    var score=0;
+    if(pw.length>=8) score++;
+    if(/[A-Z]/.test(pw)) score++;
+    if(/[0-9]/.test(pw)) score++;
+    if(/[^A-Za-z0-9]/.test(pw)) score++;
+    var levels=['','pw-weak','pw-fair','pw-good','pw-strong'];
+    var labels=['','Weak','Fair','Good','Strong'];
+    var colors=['','var(--destructive)','hsl(30,90%,55%)','var(--accent)','#22c55e'];
+    wrap.className='pw-strength-wrap '+(levels[score]||'pw-weak');
+    label.textContent=labels[score]||'Weak';
+    label.style.color=colors[score]||colors[1];
+  }
+
+  function clearFE(inputId,errId) {
+    document.getElementById(inputId).classList.remove('error');
+    var el=document.getElementById(errId);
+    el.classList.remove('show'); el.style.display='';
+  }
+  function showFErr(inputId,errId,msg) {
+    document.getElementById(inputId).classList.add('error');
+    var el=document.getElementById(errId);
+    if(msg) el.textContent=msg;
+    el.classList.add('show'); el.style.display='block';
+  }
+
+  function doSignup() {
+    var fname   = document.getElementById('su-fname').value.trim();
+    var lname   = document.getElementById('su-lname').value.trim();
+    var email   = document.getElementById('su-email').value.trim();
+    var pass    = document.getElementById('su-pass').value;
+    var confirm = document.getElementById('su-confirm').value;
+    var valid   = true;
+
+    if(!fname) { showFErr('su-fname','err-fname','First name is required'); valid=false; }
+    if(!lname) { showFErr('su-lname','err-lname','Last name is required');  valid=false; }
+
+    var emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!email||!emailRe.test(email)) {
+      showFErr('su-email','err-su-email','Please enter a valid email address'); valid=false;
+    } else if(EXISTING_EMAILS.indexOf(email)!==-1) {
+      showFErr('su-email','err-su-email','An account with this email already exists'); valid=false;
+    }
+    if(!pass||pass.length<8) { showFErr('su-pass','err-su-pass','Password must be at least 8 characters'); valid=false; }
+    if(pass!==confirm)        { showFErr('su-confirm','err-su-confirm','Passwords do not match'); valid=false; }
+    
+    if(!valid) return;
+
+    showToast('Account created! Welcome, '+fname+'!','success');
+    setTimeout(function(){ window.location.href='user-dashboard.html'; }, 800);
+  }
+
+  var _tt;
+  function showToast(msg,type) {
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.className='toast '+(type||'info')+' show';
+    clearTimeout(_tt); _tt=setTimeout(function(){ t.classList.remove('show'); },3200);
+  }
+  document.addEventListener('keydown',function(e){ if(e.key==='Enter') doSignup(); });
+</script>
+</body>
+</html>
