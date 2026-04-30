@@ -2,7 +2,6 @@
 session_start();
 include("db_connection.php");
 
-// تسجيل الحساب
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $fname = $_POST['fname'];
@@ -12,7 +11,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $fullName = $fname . " " . $lname;
 
-    // التحقق من الإيميل
     $check = $conn->prepare("SELECT UserID FROM user WHERE Email=?");
     $check->bind_param("s", $email);
     $check->execute();
@@ -22,10 +20,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Email already exists";
     } else {
 
-        // تشفير كلمة السر
         $hashed = password_hash($pass, PASSWORD_DEFAULT);
 
-        // إدخال المستخدم
         $stmt = $conn->prepare("INSERT INTO user (Email, Password, User_Name) VALUES (?, ?, ?)");
         $stmt->bind_param("sss", $email, $hashed, $fullName);
 
@@ -38,7 +34,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pstmt->execute();
     $pstmt->close();
 
-    // ✅ هذا أهم شيء
     $_SESSION['UserID'] = $userID;
     $_SESSION['User_Name'] = $fullName;
     $_SESSION['Email'] = $email;
