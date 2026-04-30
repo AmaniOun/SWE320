@@ -3,7 +3,6 @@
 session_start();
 include("db_connection.php");
 
-// تسجيل الدخول
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   $email = $_POST['email'];
@@ -23,7 +22,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $_SESSION['UserID'] = $user['UserID'];
       $_SESSION['User_Name'] = $user['User_Name'];
 
-      // هل هو admin؟
       $checkAdmin = $conn->prepare("SELECT * FROM admin WHERE UserID=?");
       $checkAdmin->bind_param("i", $user['UserID']);
       $checkAdmin->execute();
