@@ -168,7 +168,7 @@ $availableTrips = $tripsQuery->fetchAll(PDO::FETCH_ASSOC);
 
 $sql = "SELECT b.BookingID as id, b.BookingStatus as status, b.TripID,
                t.Origin, t.Destination, t.DepartureDate as date, t.DepartureTime as time, 
-               bus.Bus_Number as bus, q.QR_Value
+               t.Pickup_Location as pickup, bus.Bus_Number as bus, q.QR_Value
         FROM booking b
         INNER JOIN trip t ON b.TripID = t.TripID
         INNER JOIN bus bus ON t.BusID = bus.BusID
@@ -184,9 +184,9 @@ $bookingsDB = $stmt->fetchAll(PDO::FETCH_ASSOC);
 date_default_timezone_set('Asia/Riyadh');
 foreach($bookingsDB as &$b) {
     $b['route'] = $b['Origin'] . " → " . $b['Destination'];
-    // نحول التاريخ والوقت بتوقيت الرياض صراحة
-    $depDateTime = strtotime($b['date'] . ' ' . $b['time'] . ' Asia/Riyadh');
-    $b['isPast'] = (time() > $depDateTime);
+    $depDateTime = strtotime($b['date'] . ' ' . $b['time']);
+    $now = time();
+    $b['isPast'] = ($now > $depDateTime);
 }
 ?>
 
@@ -217,7 +217,7 @@ foreach($bookingsDB as &$b) {
 }
         .container { width: 92%; max-width: 1100px; margin: 30px auto; min-height: 80vh; }
         .booking-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.04); border-left: 6px solid #ccc; }
-        .status-confirmed { border-left-color: #2e7d32 !important; }
+        .status-confirmed { border-left-color: var(--success) !important; }
         .status-cancelled { border-left-color: var(--danger) !important; }
         .status-past { border-left-color: #9ca3af !important; }
         .status-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; display: inline-block; margin-bottom: 10px; }
@@ -235,40 +235,23 @@ foreach($bookingsDB as &$b) {
         .modal-box { background:white; padding:30px; border-radius:16px; text-align:center; width:90%; max-width:400px; position: relative; }
         .expired-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: rgba(217, 45, 32, 0.85); color: white; padding: 5px 15px; font-weight: bold; border-radius: 5px; font-size: 18px; z-index: 10; border: 2px solid white; pointer-events: none; }
     </style>
+</head>
+<body>
+
 <header class="navbar">
   <div class="navbar-inner">
-    <a href="user-dashboard.php" class="nav-logo">
-      <img src="image/saii.png" alt="SAII Logo" class="logo-img"/>
-    </a>
-
+    <a href="user-dashboard.php" class="nav-logo"><img src="image/saii.png" alt="SAII Logo"/></a>
     <nav class="nav-links">
       <a href="user-dashboard.php" class="nav-link">Dashboard</a>
-      <a href="view-trips.php" class="nav-link ">View Trips</a>
+      <a href="view-trips.php" class="nav-link">View Trips</a>
       <a href="add-booking.php" class="nav-link">Book a Trip</a>
       <a href="my_bookings.php" class="nav-link active">My Bookings</a>
       <a href="user-heat-map.php" class="nav-link">Heat Map</a>
     </nav>
-
     <div class="nav-right">
-      <span class="role-chip user">&#9679; pilgrim</span>
-      <span style="color:rgba(255,255,255,.65);font-size:.85rem;">
-          <?= htmlspecialchars($_SESSION['User_Name']) ?>
-      </span>
-      <a href="index.php" class="btn btn-sm btn-outline-dark">Logout</a>
-    </div>
-
-    <button class="nav-toggle" onclick="document.getElementById('nm').classList.toggle('open')" aria-label="Menu">&#9776;</button>
-  </div>
-
-  <div class="nav-mobile" id="nm">
-    <a href="user-dashboard.php" class="nav-link">Dashboard</a>
-    <a href="view-trips.php" class="nav-link active">View Trips</a>
-    <a href="add-booking.php" class="nav-link">Book a Trip</a>
-    <a href="my_bookings.php" class="nav-link">My Bookings</a>
-    <a href="user-heat-map.php" class="nav-link">Heat Map</a>
-
-    <div class="nav-mobile-footer">
-      <a href="index.php" class="btn btn-sm btn-outline-dark">Logout</a>
+      <span class="role-chip user">● pilgrim</span>
+      <span style="color:white; font-size:0.85rem; margin:0 10px;"><?= htmlspecialchars($_SESSION['User_Name']) ?></span>
+      <a href="logout.php" class="btn-logout">Logout</a>
     </div>
   </div>
 </header>
@@ -423,9 +406,11 @@ function render() {
                 </form>
 
                 <div class="trip-details" style="margin-top:10px; font-size:13px; color:var(--muted);">
+                    <span><i class="fa-solid fa-hashtag"></i> TRP-${b.TripID}</span> | 
                     <span><i class="fa-solid fa-calendar"></i> ${b.date}</span> | 
                     <span><i class="fa-solid fa-clock"></i> ${b.time}</span> | 
                     <span><i class="fa-solid fa-bus"></i> ${b.bus}</span>
+                    <br><span style="margin-top:5px; display:inline-block;"><i class="fa-solid fa-location-dot"></i> Pickup: ${b.pickup}</span>
                 </div>
             </div>
             <div class="booking-actions">
@@ -436,7 +421,7 @@ function render() {
                     <i class="fa-solid fa-pen-to-square" style="color:${isLocked ? '#ccc' : 'var(--primary)'}"></i>
                 </button>
                 <button class="icon-btn" onclick="handleCancel('${b.id}', '${statusText}')">
-                    <i class="fa-solid ${isLocked ? 'fa-ban' : 'fa-xmark'}" style="color:${isLocked ? '#ccc' : 'var(--danger)'}"></i>
+                    <i class="fa-solid fa-xmark" style="color:${isLocked ? '#ccc' : 'var(--danger)'}"></i>
                 </button>
             </div>
         `;
