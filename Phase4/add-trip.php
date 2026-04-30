@@ -20,8 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                      $errors['Destination'] = 'Drop-off cannot be same as pickup';
     if (!$date)                      $errors['DepartureDate'] = 'Please select a date';
     if (!$time)                      $errors['DepartureTime'] = 'Please select a departure time';
-    // التحقق من عدد المقاعد
-if ($totalSeats < 1) {
+    if (!$pickup)                    $errors['Pickup_Location'] = 'Please enter a pickup location';
+
+    if ($totalSeats < 1) {
     $errors['TotalSeats'] = 'Seats must be at least 1';
 }
    $busId = null;
@@ -45,7 +46,6 @@ if (!isset($errors['Bus_Number'])) {
         $busId = $bRow['BusID'];
         $busCapacity = (int)$bRow['Capacity'];
 
-        // ممنوع المقاعد تتجاوز سعة الباص
         if ($totalSeats > $busCapacity) {
 
             $errors['TotalSeats'] =
@@ -58,7 +58,6 @@ if (!isset($errors['Bus_Number'])) {
     }
 }
 
-    // نجيب AdminID من قاعدة البيانات بناءً على UserID المخزن في الـ session
     $adminId = null;
     $sessionUserId = $_SESSION['UserID'] ?? $_SESSION['user_id'] ?? $_SESSION['AdminID'] ?? null;
 
@@ -276,10 +275,14 @@ $locations = [
 
         <!-- Pickup Location -->
         <div class="form-field full">
-          <label class="form-label" for="Pickup_Location">Pickup Location <span style="opacity:.6;font-size:.8rem;">(optional)</span></label>
-          <input class="form-input" type="text" name="Pickup_Location" id="Pickup_Location"
+          <label class="form-label" for="Pickup_Location">Pickup Location</label>
+          <input class="form-input <?= isset($errors['Pickup_Location']) ? 'error' : '' ?>"
+                 type="text" name="Pickup_Location" id="Pickup_Location"
                  placeholder="e.g. King Fahd Gate"
                  value="<?= htmlspecialchars($_POST['Pickup_Location'] ?? '') ?>"/>
+          <?php if (isset($errors['Pickup_Location'])): ?>
+            <span class="field-error show"><?= $errors['Pickup_Location'] ?></span>
+          <?php endif; ?>
         </div>
 
       </div>
@@ -301,7 +304,6 @@ $locations = [
 const busSelect = document.getElementById('Bus_Number');
 const seatsInput = document.getElementById('TotalSeats');
 
-// capacities من PHP
 const busCapacities = {
 <?php foreach ($buses as $b): ?>
     "<?= addslashes($b['Bus_Number']) ?>": <?= (int)$b['Capacity'] ?>,
@@ -318,16 +320,13 @@ function updateSeatsFromBus() {
 
     const capacity = parseInt(busCapacities[selectedBus]);
 
-    // يحط القيمة الافتراضية
     seatsInput.value = capacity;
 
-    // يمنع الزيادة فوق السعة
     seatsInput.max = capacity;
 }
 
 busSelect.addEventListener('change', updateSeatsFromBus);
 
-// منع الكتابة فوق السعة
 seatsInput.addEventListener('input', function () {
 
     const max = parseInt(this.max || 0);
